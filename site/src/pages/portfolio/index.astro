@@ -1,0 +1,115 @@
+---
+import Base from '../../layouts/Base.astro';
+import DrawingPlaceholder from '../../components/DrawingPlaceholder.astro';
+import { projects } from '../../lib/placeholder-data';
+
+const publicProjects = projects.filter((project) => !project.private);
+---
+
+<Base title="Portfolio · Cillian Loftus" description="Studio work on the adaptive reuse of existing buildings across Limerick City.">
+	<section class="portfolio-page">
+		<header>
+			<p class="eyebrow">Portfolio</p>
+			<h1>Studio work.</h1>
+		</header>
+
+		<ul class="project-grid">
+			{
+				publicProjects.map((project) => (
+					<li>
+						<a class="project-card" href={`/portfolio/${project.slug}`}>
+							<div class="project-thumb" transition:name={`project-image-${project.slug}`}>
+								<DrawingPlaceholder drawing={project.drawings[0]} />
+							</div>
+							<div class="project-copy">
+								<h2>{project.title}</h2>
+								<p class="project-meta">
+									{project.type} &middot; {project.year} &middot; {project.location}
+								</p>
+								<p class="project-description">{project.description}</p>
+							</div>
+						</a>
+					</li>
+				))
+			}
+		</ul>
+	</section>
+</Base>
+
+<style>
+	.portfolio-page {
+		padding-block: var(--space-5);
+		display: flex;
+		flex-direction: column;
+		gap: var(--space-4);
+	}
+
+	.eyebrow {
+		font-size: var(--step--1);
+		font-weight: 500;
+		text-transform: uppercase;
+		letter-spacing: 0.08em;
+		color: var(--color-text-muted);
+		margin-bottom: var(--space-2);
+	}
+
+	h1 {
+		font-size: var(--step-4);
+		font-weight: 500;
+		letter-spacing: -0.02em;
+		line-height: 1.05;
+	}
+
+	.project-grid {
+		display: grid;
+		grid-template-columns: 1fr;
+		gap: var(--space-4);
+	}
+
+	@media (min-width: 700px) {
+		.project-grid {
+			grid-template-columns: repeat(2, 1fr);
+		}
+	}
+
+	.project-card {
+		display: flex;
+		flex-direction: column;
+		gap: var(--space-2);
+		text-decoration: none;
+		color: inherit;
+	}
+
+	.project-thumb {
+		transition: opacity 0.15s ease;
+	}
+
+	.project-card:hover .project-thumb,
+	.project-card:focus-visible .project-thumb {
+		opacity: 0.85;
+	}
+
+	.project-copy h2 {
+		font-size: var(--step-1);
+		font-weight: 600;
+		letter-spacing: -0.01em;
+		transition: color 0.15s ease;
+	}
+
+	.project-card:hover .project-copy h2,
+	.project-card:focus-visible .project-copy h2 {
+		color: var(--color-accent);
+	}
+
+	.project-meta {
+		font-size: var(--step--1);
+		color: var(--color-text-muted);
+		margin-top: 0.3em;
+		margin-bottom: 0.5em;
+	}
+
+	.project-description {
+		font-size: var(--step--1);
+		color: var(--color-text-muted);
+	}
+</style>

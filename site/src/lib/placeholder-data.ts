@@ -1,0 +1,140 @@
+import type { Project, WritingEntry } from './types';
+
+export const projects: Project[] = [
+	{
+		slug: 'car-park-housing',
+		title: 'Car Park to Housing',
+		year: 'Year 1',
+		location: 'Limerick City',
+		type: 'Housing',
+		description: 'A multi-storey car park in Limerick City reimagined as housing.',
+		featured: true,
+		drawings: [
+			{ slug: 'plan', caption: 'Ground floor plan', projection: ['plan'], medium: ['cad'] },
+			{
+				slug: 'ramp-section',
+				caption: 'Cross section through the existing car park ramp',
+				projection: ['section'],
+				medium: ['sketch'],
+			},
+			{ slug: 'street-elevation', caption: 'Street elevation', projection: ['elevation'], medium: ['cad'] },
+			{
+				slug: 'exploded-axo',
+				caption: 'Exploded axonometric of the housing insertion',
+				projection: ['axonometric'],
+				medium: ['render'],
+				fullWidth: true,
+			},
+			{ slug: 'courtyard', caption: 'Courtyard perspective', projection: ['perspective'], medium: ['render'] },
+			{
+				slug: 'facade-detail',
+				caption: 'Facade detail, model photo',
+				projection: ['detail'],
+				medium: ['model-photo'],
+			},
+		],
+	},
+	{
+		slug: 'church-public-space',
+		title: 'Church as Public Space',
+		year: 'Year 2',
+		location: 'Limerick City',
+		type: 'Public Space',
+		description: 'A former church adapted into public space with shelter provision.',
+		featured: true,
+		drawings: [
+			{ slug: 'plan', caption: 'Ground floor plan', projection: ['plan'], medium: ['sketch'] },
+			{
+				slug: 'nave-section-perspective',
+				caption: 'Section perspective through the nave',
+				projection: ['section', 'perspective'],
+				medium: ['render'],
+				fullWidth: true,
+			},
+			{ slug: 'west-elevation', caption: 'West elevation', projection: ['elevation'], medium: ['cad'] },
+			{
+				slug: 'site-axo',
+				caption: 'Site axonometric, hand-drawn collage',
+				projection: ['axonometric'],
+				medium: ['collage', 'sketch'],
+			},
+			{
+				slug: 'shelter-perspective',
+				caption: 'Shelter space perspective sketch',
+				projection: ['perspective'],
+				medium: ['sketch'],
+			},
+			{ slug: 'threshold-detail', caption: 'Threshold detail', projection: ['detail'], medium: ['cad'] },
+		],
+	},
+	{
+		slug: 'laneway-healthcare',
+		title: 'Laneway Block to Healthcare Centre',
+		year: 'Year 3',
+		location: 'Limerick City',
+		type: 'Healthcare',
+		description: 'A laneway block in Limerick City reused as a healthcare centre.',
+		featured: true,
+		drawings: [
+			{
+				slug: 'plan',
+				caption: 'Ground floor plan, full site',
+				projection: ['plan'],
+				medium: ['cad'],
+				fullWidth: true,
+			},
+			{ slug: 'lane-section', caption: 'Section through the laneway', projection: ['section'], medium: ['cad'] },
+			{
+				slug: 'courtyard-elevation',
+				caption: 'Courtyard elevation sketch',
+				projection: ['elevation'],
+				medium: ['sketch'],
+			},
+			{
+				slug: 'massing-axo',
+				caption: 'Axonometric plan of the massing',
+				projection: ['axonometric', 'plan'],
+				medium: ['render'],
+			},
+			{
+				slug: 'waiting-room',
+				caption: 'Waiting room perspective, collage',
+				projection: ['perspective'],
+				medium: ['collage'],
+			},
+			{
+				slug: 'entrance-detail',
+				caption: 'Entrance canopy detail, model photo',
+				projection: ['detail'],
+				medium: ['model-photo'],
+			},
+		],
+	},
+];
+
+export const writing: WritingEntry[] = [
+	{
+		slug: 'how-much-does-a-cloud-weigh',
+		title: 'How Much Does a Cloud Weigh?',
+		date: '2026-05-01',
+		category: 'dissertation',
+		summary: 'The architecture of artificial intelligence in Ireland.',
+		body: 'Placeholder body text for the dissertation. The full piece examines the physical and infrastructural footprint of AI and cloud computing through a series of Irish case studies.',
+	},
+	{
+		slug: 'placeholder-article',
+		title: 'Sample Article Title',
+		date: '2026-03-01',
+		category: 'article',
+		summary: 'Placeholder entry to prove out the article layout ahead of real content.',
+		body: 'Placeholder body text standing in for a real article.',
+	},
+	{
+		slug: 'placeholder-poem',
+		title: 'Sample Poem Title',
+		date: '2026-02-01',
+		category: 'poetry',
+		summary: 'Placeholder entry to prove out the poetry layout ahead of real content.',
+		body: 'Placeholder body text standing in for a real poem.',
+	},
+];

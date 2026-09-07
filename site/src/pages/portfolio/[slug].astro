@@ -1,0 +1,115 @@
+---
+import Base from '../../layouts/Base.astro';
+import DrawingPlaceholder from '../../components/DrawingPlaceholder.astro';
+import { projects } from '../../lib/placeholder-data';
+
+export function getStaticPaths() {
+	return projects
+		.filter((project) => !project.private)
+		.map((project) => ({
+			params: { slug: project.slug },
+			props: { project },
+		}));
+}
+
+const { project } = Astro.props;
+---
+
+<Base title={`${project.title} · Cillian Loftus`} description={project.description}>
+	<article class="project-page">
+		<header>
+			<p class="eyebrow">
+				<a href="/portfolio">Portfolio</a>
+			</p>
+			<h1>{project.title}</h1>
+			<p class="project-meta">
+				{project.type} &middot; {project.year} &middot; {project.location}
+			</p>
+			<p class="project-description">{project.description}</p>
+		</header>
+
+		<div class="hero-thumb" transition:name={`project-image-${project.slug}`}>
+			<DrawingPlaceholder drawing={project.drawings[0]} />
+		</div>
+
+		<ul class="drawing-grid">
+			{
+				project.drawings.map((drawing) => (
+					<li class:list={{ 'full-width': drawing.fullWidth }}>
+						<DrawingPlaceholder drawing={drawing} />
+						<p class="caption">{drawing.caption}</p>
+					</li>
+				))
+			}
+		</ul>
+	</article>
+</Base>
+
+<style>
+	.project-page {
+		padding-block: var(--space-5);
+		display: flex;
+		flex-direction: column;
+		gap: var(--space-4);
+	}
+
+	.eyebrow {
+		font-size: var(--step--1);
+		font-weight: 500;
+		text-transform: uppercase;
+		letter-spacing: 0.08em;
+		margin-bottom: var(--space-2);
+	}
+
+	.eyebrow a {
+		color: var(--color-text-muted);
+		text-decoration: none;
+	}
+
+	.eyebrow a:hover,
+	.eyebrow a:focus-visible {
+		color: var(--color-accent);
+	}
+
+	h1 {
+		font-size: var(--step-4);
+		font-weight: 500;
+		letter-spacing: -0.02em;
+		line-height: 1.05;
+		margin-bottom: var(--space-2);
+	}
+
+	.project-meta {
+		font-size: var(--step-0);
+		color: var(--color-text-muted);
+		margin-bottom: var(--space-2);
+	}
+
+	.project-description {
+		font-size: var(--step-1);
+		color: var(--color-text-muted);
+		max-width: 40rem;
+	}
+
+	.drawing-grid {
+		display: grid;
+		grid-template-columns: 1fr;
+		gap: var(--space-4);
+	}
+
+	@media (min-width: 700px) {
+		.drawing-grid {
+			grid-template-columns: repeat(2, 1fr);
+		}
+
+		.drawing-grid li.full-width {
+			grid-column: 1 / -1;
+		}
+	}
+
+	.caption {
+		font-size: var(--step--1);
+		color: var(--color-text-muted);
+		margin-top: var(--space-1);
+	}
+</style>

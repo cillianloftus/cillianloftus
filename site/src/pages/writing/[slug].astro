@@ -1,0 +1,90 @@
+---
+import Base from '../../layouts/Base.astro';
+import { writing } from '../../lib/placeholder-data';
+
+const categoryLabels = {
+	article: 'Article',
+	poetry: 'Poetry',
+	dissertation: 'Dissertation',
+};
+
+export function getStaticPaths() {
+	return writing
+		.filter((entry) => !entry.draft)
+		.map((entry) => ({
+			params: { slug: entry.slug },
+			props: { entry },
+		}));
+}
+
+const { entry } = Astro.props;
+---
+
+<Base title={`${entry.title} · Cillian Loftus`} description={entry.summary}>
+	<article class="writing-entry">
+		<header>
+			<p class="eyebrow">
+				<a href="/writing">Writing</a> &middot; {categoryLabels[entry.category]}
+			</p>
+			<h1>{entry.title}</h1>
+			<p class="entry-date">
+				<time datetime={entry.date}>
+					{new Date(entry.date).toLocaleDateString('en-IE', { year: 'numeric', month: 'long' })}
+				</time>
+			</p>
+		</header>
+
+		<div class="entry-body">
+			<p>{entry.body}</p>
+		</div>
+	</article>
+</Base>
+
+<style>
+	.writing-entry {
+		max-width: 40rem;
+		padding-block: var(--space-5);
+		display: flex;
+		flex-direction: column;
+		gap: var(--space-4);
+	}
+
+	.eyebrow {
+		font-size: var(--step--1);
+		font-weight: 500;
+		text-transform: uppercase;
+		letter-spacing: 0.08em;
+		color: var(--color-text-muted);
+		margin-bottom: var(--space-2);
+	}
+
+	.eyebrow a {
+		color: inherit;
+		text-decoration: none;
+	}
+
+	.eyebrow a:hover,
+	.eyebrow a:focus-visible {
+		color: var(--color-accent);
+	}
+
+	h1 {
+		font-size: var(--step-4);
+		font-weight: 500;
+		letter-spacing: -0.02em;
+		line-height: 1.05;
+		margin-bottom: var(--space-2);
+	}
+
+	.entry-date {
+		font-size: var(--step--1);
+		color: var(--color-text-muted);
+	}
+
+	.entry-body {
+		font-size: var(--step-1);
+		display: flex;
+		flex-direction: column;
+		gap: var(--space-3);
+	}
+</style>

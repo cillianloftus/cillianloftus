@@ -1,0 +1,113 @@
+---
+import Base from '../../layouts/Base.astro';
+import { writing } from '../../lib/placeholder-data';
+
+const categoryLabels = {
+	article: 'Article',
+	poetry: 'Poetry',
+	dissertation: 'Dissertation',
+};
+
+const entries = writing
+	.filter((entry) => !entry.draft)
+	.sort((a, b) => b.date.localeCompare(a.date))
+	.map((entry) => ({
+		...entry,
+		href: `/writing/${entry.slug}`,
+	}));
+---
+
+<Base title="Writing · Cillian Loftus" description="Essays and poetry, including an award-winning dissertation on AI infrastructure in Ireland.">
+	<section class="writing-page">
+		<header>
+			<p class="eyebrow">Writing</p>
+			<h1>Essays and poetry.</h1>
+		</header>
+
+		<ul class="entry-list">
+			{
+				entries.map((entry) => (
+					<li>
+						<a class="entry-card" href={entry.href}>
+							<p class="entry-category">{categoryLabels[entry.category]}</p>
+							<h2>{entry.title}</h2>
+							<p class="entry-summary">{entry.summary}</p>
+						</a>
+					</li>
+				))
+			}
+		</ul>
+	</section>
+</Base>
+
+<style>
+	.writing-page {
+		padding-block: var(--space-5);
+		display: flex;
+		flex-direction: column;
+		gap: var(--space-4);
+	}
+
+	.eyebrow {
+		font-size: var(--step--1);
+		font-weight: 500;
+		text-transform: uppercase;
+		letter-spacing: 0.08em;
+		color: var(--color-text-muted);
+		margin-bottom: var(--space-2);
+	}
+
+	h1 {
+		font-size: var(--step-4);
+		font-weight: 500;
+		letter-spacing: -0.02em;
+		line-height: 1.05;
+	}
+
+	.entry-list {
+		display: flex;
+		flex-direction: column;
+	}
+
+	.entry-list li {
+		border-top: 1px solid var(--color-border);
+	}
+
+	.entry-list li:last-child {
+		border-bottom: 1px solid var(--color-border);
+	}
+
+	.entry-card {
+		display: block;
+		padding-block: var(--space-3);
+		text-decoration: none;
+		color: inherit;
+	}
+
+	.entry-category {
+		font-size: var(--step--1);
+		font-weight: 600;
+		text-transform: uppercase;
+		letter-spacing: 0.06em;
+		color: var(--color-text-muted);
+		margin-bottom: 0.4em;
+	}
+
+	.entry-card h2 {
+		font-size: var(--step-2);
+		font-weight: 600;
+		letter-spacing: -0.01em;
+		transition: color 0.15s ease;
+	}
+
+	.entry-card:hover h2,
+	.entry-card:focus-visible h2 {
+		color: var(--color-accent);
+	}
+
+	.entry-summary {
+		font-size: var(--step-0);
+		color: var(--color-text-muted);
+		margin-top: 0.3em;
+	}
+</style>

@@ -79,8 +79,7 @@ Settled — changing these later means redirects.
 /portfolio/[slug]            project page
 /drawings                    filterable index of all drawings
 /writing                     writing index
-/writing/[slug]
-/how-much-does-a-cloud-weigh dissertation, deliberately top-level
+/writing/[slug]              includes the dissertation (how-much-does-a-cloud-weigh)
 /colophon
 /private/[slug]              password-protected work
 /404
@@ -92,11 +91,15 @@ Settled — changing these later means redirects.
 ## Key features
 
 **Drawings index (`/drawings`)** — every drawing across all projects, filtered
-by pill toggles. Two rows: projection above, medium below. OR within a row,
-AND between rows. Show counts per pill. Disable (don't hide) pills that would
-return zero results. No "All" pill — empty selection means everything. Filter
-state lives in the URL query string so it's linkable and back-button works.
-All drawings render at build time; filtering is show/hide via CSS class.
+by pill toggles. Two rows: projection above, medium below. Selecting multiple
+pills, whether in the same row or across both rows, is always AND — a drawing
+must match every selected pill (e.g. Plan + Axonometric shows only drawings
+tagged as both, not either). Pill counts and disabled state reflect this: a
+pill's count is how many of the currently-visible drawings also carry that
+tag, so pills that would drop the result to zero grey out. No "All" pill —
+empty selection means everything. Filter state lives in the URL query string
+so it's linkable and back-button works. All drawings render at build time;
+filtering is show/hide via CSS class.
 
 **Lightbox** — the one React island. Fits drawing to screen on open, then uses
 native browser pinch-zoom via `touch-action` rather than hand-rolled JS zoom.

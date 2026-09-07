@@ -1,0 +1,279 @@
+---
+import Base from '../layouts/Base.astro';
+import DrawingPlaceholder from '../components/DrawingPlaceholder.astro';
+import { projects } from '../lib/placeholder-data';
+import { PROJECTIONS, MEDIUMS } from '../lib/types';
+
+const allDrawings = projects
+	.filter((project) => !project.private)
+	.flatMap((project) =>
+		project.drawings.map((drawing) => ({
+			...drawing,
+			projectSlug: project.slug,
+			projectTitle: project.title,
+		})),
+	);
+
+const projectionCounts = Object.fromEntries(
+	PROJECTIONS.map((p) => [p.value, allDrawings.filter((d) => d.projection.includes(p.value)).length]),
+);
+const mediumCounts = Object.fromEntries(
+	MEDIUMS.map((m) => [m.value, allDrawings.filter((d) => d.medium.includes(m.value)).length]),
+);
+---
+
+<Base
+	title="Drawings · Cillian Loftus"
+	description="Every plan, section, and sketch from the studio work, filterable."
+>
+	<section class="drawings-page">
+		<header>
+			<p class="eyebrow">Drawings</p>
+			<h1>Every drawing.</h1>
+		</header>
+
+		<div class="filter-bar">
+			<div class="filter-row" role="group" aria-label="Filter by projection">
+				{
+					PROJECTIONS.map((p) => (
+						<button type="button" class="filter-pill" data-axis="projection" data-value={p.value} aria-pressed="false">
+							{p.label} <span class="pill-count">{projectionCounts[p.value]}</span>
+						</button>
+					))
+				}
+			</div>
+			<div class="filter-row" role="group" aria-label="Filter by medium">
+				{
+					MEDIUMS.map((m) => (
+						<button type="button" class="filter-pill" data-axis="medium" data-value={m.value} aria-pressed="false">
+							{m.label} <span class="pill-count">{mediumCounts[m.value]}</span>
+						</button>
+					))
+				}
+			</div>
+		</div>
+
+		<ul class="drawing-list">
+			{
+				allDrawings.map((drawing) => (
+					<li
+						class="drawing-item"
+						class:list={{ 'full-width': drawing.fullWidth }}
+						data-projection={drawing.projection.join(' ')}
+						data-medium={drawing.medium.join(' ')}
+					>
+						<DrawingPlaceholder drawing={drawing} />
+						<p class="caption">
+							{drawing.caption} &middot; <a href={`/portfolio/${drawing.projectSlug}`}>{drawing.projectTitle}</a>
+						</p>
+					</li>
+				))
+			}
+		</ul>
+	</section>
+</Base>
+
+<script is:inline>
+	function initDrawingsFilter() {
+		var root = document.querySelector('.drawings-page');
+		if (!root) return;
+
+		var pillButtons = Array.prototype.slice.call(root.querySelectorAll('.filter-pill'));
+		var items = Array.prototype.slice.call(root.querySelectorAll('.drawing-item'));
+
+		function getStateFromURL() {
+			var params = new URLSearchParams(location.search);
+			return {
+				projection: new Set((params.get('projection') || '').split(',').filter(Boolean)),
+				medium: new Set((params.get('medium') || '').split(',').filter(Boolean)),
+			};
+		}
+
+		function stateToURL(state) {
+			var params = new URLSearchParams();
+			if (state.projection.size) params.set('projection', Array.from(state.projection).join(','));
+			if (state.medium.size) params.set('medium', Array.from(state.medium).join(','));
+			var qs = params.toString();
+			return qs ? location.pathname + '?' + qs : location.pathname;
+		}
+
+		function matches(item, state) {
+			var itemProjections = item.dataset.projection.split(' ');
+			var itemMediums = item.dataset.medium.split(' ');
+			var projectionOk = Array.from(state.projection).every((p) => itemProjections.includes(p));
+			var mediumOk = Array.from(state.medium).every((m) => itemMediums.includes(m));
+			return projectionOk && mediumOk;
+		}
+
+		function countFor(axis, value, state) {
+			return items.filter((item) => {
+				if (!matches(item, state)) return false;
+				return item.dataset[axis].split(' ').includes(value);
+			}).length;
+		}
+
+		function render() {
+			var state = getStateFromURL();
+
+			pillButtons.forEach((btn) => {
+				var axis = btn.dataset.axis;
+				var value = btn.dataset.value;
+				var selected = state[axis].has(value);
+				var count = countFor(axis, value, state);
+				btn.setAttribute('aria-pressed', String(selected));
+				btn.disabled = count === 0 && !selected;
+				var countEl = btn.querySelector('.pill-count');
+				if (countEl) countEl.textContent = String(count);
+			});
+
+			items.forEach((item) => {
+				item.classList.toggle('is-hidden', !matches(item, state));
+			});
+		}
+
+		pillButtons.forEach((btn) => {
+			btn.addEventListener('click', () => {
+				var state = getStateFromURL();
+				var axis = btn.dataset.axis;
+				var value = btn.dataset.value;
+				if (state[axis].has(value)) {
+					state[axis].delete(value);
+				} else {
+					state[axis].add(value);
+				}
+				history.pushState(null, '', stateToURL(state));
+				render();
+			});
+		});
+
+		window.addEventListener('popstate', render);
+
+		render();
+	}
+
+	initDrawingsFilter();
+	document.addEventListener('astro:after-swap', initDrawingsFilter);
+</script>
+
+<style>
+	.drawings-page {
+		padding-block: var(--space-5);
+		display: flex;
+		flex-direction: column;
+		gap: var(--space-4);
+	}
+
+	.eyebrow {
+		font-size: var(--step--1);
+		font-weight: 500;
+		text-transform: uppercase;
+		letter-spacing: 0.08em;
+		color: var(--color-text-muted);
+		margin-bottom: var(--space-2);
+	}
+
+	h1 {
+		font-size: var(--step-4);
+		font-weight: 500;
+		letter-spacing: -0.02em;
+		line-height: 1.05;
+	}
+
+	.filter-bar {
+		display: flex;
+		flex-direction: column;
+		gap: var(--space-2);
+	}
+
+	.filter-row {
+		display: flex;
+		flex-wrap: wrap;
+		gap: var(--space-1);
+	}
+
+	.filter-pill {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.4em;
+		min-height: 44px;
+		padding-inline: var(--space-2);
+		border: 1px solid var(--color-border);
+		border-radius: 999px;
+		background: none;
+		font-size: var(--step--1);
+		font-weight: 500;
+		color: var(--color-text);
+		cursor: pointer;
+		transition:
+			border-color 0.15s ease,
+			color 0.15s ease,
+			opacity 0.15s ease;
+	}
+
+	.filter-pill:hover:not(:disabled),
+	.filter-pill:focus-visible {
+		border-color: var(--color-accent);
+		color: var(--color-accent);
+	}
+
+	.filter-pill[aria-pressed='true'] {
+		border-color: var(--color-accent);
+		background: var(--color-accent);
+		color: var(--color-bg);
+	}
+
+	.filter-pill[aria-pressed='true']:hover,
+	.filter-pill[aria-pressed='true']:focus-visible {
+		color: var(--color-bg);
+		opacity: 0.85;
+	}
+
+	.filter-pill:disabled {
+		opacity: 0.35;
+		cursor: not-allowed;
+	}
+
+	.pill-count {
+		font-variant-numeric: tabular-nums;
+		color: var(--color-text-muted);
+	}
+
+	.filter-pill[aria-pressed='true'] .pill-count {
+		color: inherit;
+	}
+
+	.drawing-list {
+		display: grid;
+		grid-template-columns: 1fr;
+		gap: var(--space-4);
+	}
+
+	@media (min-width: 700px) {
+		.drawing-list {
+			grid-template-columns: repeat(2, 1fr);
+		}
+
+		.drawing-list li.full-width {
+			grid-column: 1 / -1;
+		}
+	}
+
+	.drawing-item.is-hidden {
+		display: none;
+	}
+
+	.caption {
+		font-size: var(--step--1);
+		color: var(--color-text-muted);
+		margin-top: var(--space-1);
+	}
+
+	.caption a {
+		color: inherit;
+	}
+
+	.caption a:hover,
+	.caption a:focus-visible {
+		color: var(--color-accent);
+	}
+</style>
