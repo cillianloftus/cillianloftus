@@ -50,12 +50,18 @@ import Base from '../layouts/Base.astro';
 		text-decoration: none;
 		font-weight: 500;
 		color: var(--color-text);
+		transition: color 0.15s ease;
 	}
 
 	.back-link::after {
 		content: '→';
 		margin-left: 0.4em;
 		transition: transform 0.2s ease;
+	}
+
+	.back-link:hover,
+	.back-link:focus-visible {
+		color: var(--color-accent);
 	}
 
 	.back-link:hover::after,

@@ -1,0 +1,205 @@
+---
+import Base from '../layouts/Base.astro';
+
+const stack = [
+	{
+		name: 'Astro',
+		description:
+			"Renders everything to plain HTML at build time.",
+	},
+	{
+		name: 'TypeScript',
+		description: "For the Sanity queries and anything else that touches data. The page templates themselves are mostly markup.",
+	},
+	{
+		name: 'Sanity',
+		description:
+			'Where the content actually lives: projects, drawings, writing, all as structured fields. The site pulls it in at build time with GROQ.',
+	},
+	{
+		name: 'CSS',
+		description: "Hand-written CSS, no framework. Shared set of colour and spacing variables to ensure consistency.",
+	},
+	{
+		name: 'Cloudflare',
+		description: 'The built site is served as static files from a Cloudflare Worker.',
+	},
+	{
+		name: 'IBM Plex Sans',
+		description: "The one typeface on the site, self-hosted so nothing calls out to Google Fonts.",
+	},
+];
+
+const notes = [
+	{
+		heading: 'Mobile first',
+		body: "Built for a phone screen first, then widened. Type sizes scale with clamp() instead of jumping at fixed breakpoints, and anything tappable is at least 44px.",
+	},
+	{
+		heading: 'Dark mode',
+		body: "Matches your system setting by default. There's a manual toggle too, and it remembers what you picked.",
+	},
+	{
+		heading: 'View transitions',
+		body: "Pages morph into each other on navigation instead of hard-reloading.",
+	},
+];
+---
+
+<Base
+	title="Colophon · Cillian Loftus"
+	description="What this site is built with, and why."
+>
+	<section class="colophon">
+		<header>
+			<p class="eyebrow">Colophon</p>
+			<h1>How this site was built.</h1>
+			<p class="lede">
+				I wanted this site to prove I can build things, not just design them. Below is what it's
+				actually made of.
+			</p>
+		</header>
+
+		<section aria-labelledby="stack-heading">
+			<h2 id="stack-heading">Stack</h2>
+			<dl class="stack-list">
+				{
+					stack.map((item) => (
+						<div class="stack-item">
+							<dt>{item.name}</dt>
+							<dd>{item.description}</dd>
+						</div>
+					))
+				}
+			</dl>
+		</section>
+
+		<section aria-labelledby="notes-heading">
+			<h2 id="notes-heading">Notes</h2>
+			<ul class="notes-list">
+				{
+					notes.map((note) => (
+						<li>
+							<h3>{note.heading}</h3>
+							<p>{note.body}</p>
+						</li>
+					))
+				}
+			</ul>
+		</section>
+
+		<p class="source-link">
+			<a href="https://github.com/cillianloftus/cillianloftus">View the source code on GitHub</a>
+		</p>
+	</section>
+</Base>
+
+<style>
+	.colophon {
+		padding-block: var(--space-5);
+		display: flex;
+		flex-direction: column;
+		gap: var(--space-4);
+	}
+
+	.colophon > header + section,
+	.colophon > section + section {
+		border-top: 1px solid var(--color-border);
+		padding-top: var(--space-4);
+	}
+
+	.eyebrow {
+		font-size: var(--step--1);
+		font-weight: 500;
+		text-transform: uppercase;
+		letter-spacing: 0.08em;
+		color: var(--color-text-muted);
+		margin-bottom: var(--space-2);
+	}
+
+	h1 {
+		font-size: var(--step-4);
+		font-weight: 500;
+		letter-spacing: -0.02em;
+		line-height: 1.05;
+		margin-bottom: var(--space-3);
+	}
+
+	.lede {
+		font-size: var(--step-1);
+		color: var(--color-text-muted);
+	}
+
+	h2 {
+		font-size: var(--step--1);
+		font-weight: 700;
+		text-transform: uppercase;
+		letter-spacing: 0.08em;
+		margin-bottom: var(--space-3);
+	}
+
+	.stack-list {
+		display: flex;
+		flex-direction: column;
+		gap: var(--space-3);
+	}
+
+	.stack-item dt {
+		font-weight: 600;
+		margin-bottom: 0.3em;
+	}
+
+	.stack-item dd {
+		margin: 0;
+		color: var(--color-text-muted);
+		font-size: var(--step-0);
+	}
+
+	.notes-list {
+		display: flex;
+		flex-direction: column;
+		gap: var(--space-3);
+	}
+
+	.notes-list h3 {
+		font-size: var(--step-0);
+		font-weight: 600;
+		margin-bottom: 0.3em;
+	}
+
+	.notes-list p {
+		color: var(--color-text-muted);
+	}
+
+	.source-link {
+		padding-top: var(--space-3);
+		border-top: 1px solid var(--color-border);
+	}
+
+	.source-link a {
+		position: relative;
+		display: inline-flex;
+		align-items: center;
+		min-height: 44px;
+		text-decoration: none;
+		font-weight: 500;
+		color: var(--color-text);
+		transition: color 0.15s ease;
+	}
+
+	.source-link a::after {
+		content: '→';
+		margin-left: 0.4em;
+		transition: transform 0.2s ease;
+	}
+
+	.source-link a:hover,
+	.source-link a:focus-visible {
+		color: var(--color-accent);
+	}
+
+	.source-link a:hover::after,
+	.source-link a:focus-visible::after {
+		transform: translateX(0.25em);
+	}
+</style>
