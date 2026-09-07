@@ -1,17 +1,123 @@
 ---
+import Base from '../layouts/Base.astro';
 
+const hubLinks = [
+	{
+		href: '/portfolio',
+		title: 'Portfolio',
+		description: 'Studio work on the adaptive reuse of existing buildings across Limerick City.',
+	},
+	{
+		href: '/drawings',
+		title: 'Drawings',
+		description: 'Every plan, section, and sketch from the studio work, filterable.',
+	},
+	{
+		href: '/writing',
+		title: 'Writing',
+		description: 'Essays and poetry, including an award-winning dissertation on AI infrastructure in Ireland.',
+	},
+	{
+		href: '/cv',
+		title: 'CV',
+		description: 'Studio history, work experience, and research.',
+	},
+];
 ---
 
-<html lang="en">
-	<head>
-		<meta charset="utf-8" />
-		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-		<link rel="icon" href="/favicon.ico" />
-		<meta name="viewport" content="width=device-width" />
-		<meta name="generator" content={Astro.generator} />
-		<title>Astro</title>
-	</head>
-	<body>
-		<h1>yes</h1>
-	</body>
-</html>
+<Base
+	title="Cillian Loftus · Architecture"
+	description="Portfolio, writing, and CV of Cillian Loftus, an architecture student at the University of Limerick."
+>
+	<section class="hero">
+		<p class="eyebrow">Architecture</p>
+		<h1>Drawings, studio work, and writing.</h1>
+	</section>
+
+	<section class="hub">
+		<ul class="hub-grid">
+			{
+				hubLinks.map((link) => (
+					<li>
+						<a class="hub-card" href={link.href}>
+							<span class="hub-title">{link.title}</span>
+							<span class="hub-description">{link.description}</span>
+						</a>
+					</li>
+				))
+			}
+		</ul>
+	</section>
+</Base>
+
+<style>
+	.hero {
+		padding-block: var(--space-5) var(--space-4);
+		max-width: 44rem;
+	}
+
+	.eyebrow {
+		font-size: var(--step--1);
+		font-weight: 500;
+		text-transform: uppercase;
+		letter-spacing: 0.08em;
+		color: var(--color-text-muted);
+		margin-bottom: var(--space-2);
+	}
+
+	.hero h1 {
+		font-size: var(--step-4);
+		font-weight: 500;
+		letter-spacing: -0.01em;
+	}
+
+	.hub {
+		padding-block: var(--space-4) var(--space-5);
+		border-top: 1px solid var(--color-border);
+	}
+
+	.hub-grid {
+		display: grid;
+		grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr));
+		gap: var(--space-3);
+		list-style: none;
+	}
+
+	.hub-card {
+		display: block;
+		height: 100%;
+		padding: var(--space-3);
+		border: 1px solid var(--color-border);
+		text-decoration: none;
+		color: inherit;
+		transition:
+			transform 0.2s ease,
+			border-color 0.2s ease;
+	}
+
+	.hub-card:hover,
+	.hub-card:focus-visible {
+		transform: translateY(-2px);
+		border-color: var(--color-accent);
+	}
+
+	.hub-title {
+		display: block;
+		font-size: var(--step-1);
+		font-weight: 600;
+		margin-bottom: var(--space-1);
+	}
+
+	.hub-title::after {
+		content: '→';
+		margin-left: 0.5em;
+		color: var(--color-text-muted);
+	}
+
+	.hub-description {
+		display: block;
+		font-size: var(--step--1);
+		color: var(--color-text-muted);
+	}
+
+</style>

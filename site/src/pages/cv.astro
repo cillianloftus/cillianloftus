@@ -1,0 +1,476 @@
+---
+import Base from '../layouts/Base.astro';
+
+const cvHref = '/cillian-loftus-cv.pdf';
+
+const about =
+	'Architecture student at the University of Limerick, having completed third year and seeking a work placement for professional experience before fourth year. Award-winning writer and researcher on AI infrastructure, with three years of studio work adapting existing buildings across Limerick City. Brings an analytical foundation from prior mathematics study, alongside strong design software skills and hands-on model-making experience.';
+
+const experience = [
+	{
+		role: 'Crew Member',
+		org: 'McDonald’s, Castlebar',
+		dates: 'June 2022 – Present',
+		bullets: [
+			'Provide customer service in a fast-paced environment, handling orders accurately and efficiently under pressure.',
+			'Support team operations across front-of-house and kitchen, adapting to whichever station the shift requires.',
+			'Train new team members on service standards and daily operations.',
+		],
+	},
+	{
+		role: 'Full Stack Web Developer',
+		org: 'Freelance',
+		dates: 'August 2017 – September 2023',
+		bullets: [
+			'Ran a freelance practice throughout secondary school and university.',
+			'Designed and developed custom websites and web-based applications for independent clients internationally.',
+			'Handled user interfaces, back-end architecture and database integrations across the full stack.',
+			'Sourced and managed clients independently, from initial brief through to delivery.',
+		],
+	},
+];
+
+const education = [
+	{
+		degree: 'Bachelor of Architecture (B.Arch)',
+		org: 'University of Limerick',
+		dates: '2023 – Present',
+		bullets: [
+			'School of Architecture (SAUL); third year of a five-year degree completed.',
+			'Three years of studio work centred on the adaptive reuse of existing buildings in Limerick City, including a multi-storey car park converted to housing, a church adapted as public space with shelter provision, and a laneway block reused as a healthcare centre.',
+		],
+	},
+	{
+		degree: 'Mathematics',
+		org: 'Trinity College Dublin',
+		dates: '2020 – 2022',
+		bullets: ['Completed two years before transferring to Architecture at University of Limerick.'],
+	},
+];
+
+const research = [
+	{
+		title: 'How Much Does a Cloud Weigh?',
+		subtitle: 'The Architecture of Artificial Intelligence in Ireland',
+		dates: 'May 2026',
+		href: '/how-much-does-a-cloud-weigh',
+		bullets: [
+			'Examined the physical and infrastructural footprint of AI and cloud computing through a series of Irish case studies.',
+			'Primary research across two sites: a full-frontage photographic survey rectified into a building elevation where none existed, site mapping over aerial imagery, and national consumption figures compiled from CSO returns and planning submissions.',
+			'Argued that restrictions on Dublin’s grid have pushed data centre development into western regions ill-equipped to absorb it, shifting the burden rather than resolving it, and read these buildings as a new and largely unexamined rural typology.',
+			'Adapted into a standalone essay submitted to the RIAI Student Writing Prize 2026, to be announced in October.',
+		],
+	},
+];
+
+const awards = [
+	{
+		title: 'SAUL Dissertation of the Year Award, 2026',
+		org: 'University of Limerick',
+		description: 'Judged by an external panel and presented at the opening of the Design@UL exhibition.',
+	},
+];
+
+const skillGroups = [
+	{
+		heading: 'Design Software',
+		levels: [
+			{ label: 'Advanced', items: ['AutoCAD', 'Photoshop', 'InDesign'] },
+			{ label: 'Proficient', items: ['Rhino', 'SketchUp'] },
+			{ label: 'Working Knowledge', items: ['Revit', 'Grasshopper'] },
+		],
+	},
+	{
+		heading: 'Computational / Scripting',
+		levels: [
+			{ label: 'Advanced', items: ['Python', 'JavaScript', 'HTML', 'CSS'] },
+			{ label: 'Proficient', items: ['SQL', 'Node.js', 'Git'] },
+		],
+	},
+	{
+		heading: 'Other',
+		levels: [{ label: '', items: ['Physical model-making', 'Microsoft Office (Excel, Word)'] }],
+	},
+];
+
+const languages = [
+	{ label: 'Native', value: 'English' },
+	{ label: 'Fluent', value: 'Irish' },
+	{ label: 'Leaving Certificate', value: 'French' },
+];
+---
+
+<Base
+	title="CV · Cillian Loftus"
+	description="Cillian Loftus's CV: education, experience, and research."
+>
+	<section class="cv-page">
+		<header class="cv-page-header">
+			<div>
+				<p class="eyebrow">Curriculum Vitae</p>
+				<h1>Cillian Loftus</h1>
+				<p class="cv-title">Part 1 Architectural Assistant</p>
+				<ul class="cv-contact">
+					<li>Castlebar, Co. Mayo</li>
+					<li><a href="mailto:cillianloftus@gmail.com">cillianloftus@gmail.com</a></li>
+				</ul>
+			</div>
+			<a class="cv-download" href={cvHref} download="Cillian Loftus - CV.pdf">Download PDF</a>
+		</header>
+
+		<div class="cv-layout">
+			<aside class="cv-sidebar">
+				<section aria-labelledby="about-heading">
+					<h2 id="about-heading">About Me</h2>
+					<p>{about}</p>
+				</section>
+
+				<section aria-labelledby="skills-heading">
+					<h2 id="skills-heading">Skills</h2>
+					{
+						skillGroups.map((group) => (
+							<div class="skill-group">
+								<h3>{group.heading}</h3>
+								<div class="level-list">
+									{group.levels.map((level) => (
+										<p class="level-line">
+											{level.label && (
+												<>
+													<strong class="level-label">{level.label}</strong>
+													{' · '}
+												</>
+											)}
+											{level.items.join(', ')}
+										</p>
+									))}
+								</div>
+							</div>
+						))
+					}
+				</section>
+
+				<section aria-labelledby="awards-heading">
+					<h2 id="awards-heading">Awards</h2>
+					<ul class="entry-list">
+						{
+							awards.map((award) => (
+								<li class="entry">
+									<h3>{award.title}</h3>
+									<p class="entry-meta">{award.org}</p>
+									<p>{award.description}</p>
+								</li>
+							))
+						}
+					</ul>
+				</section>
+
+				<section aria-labelledby="languages-heading">
+					<h2 id="languages-heading">Languages</h2>
+					<div class="level-list">
+						{
+							languages.map((lang) => (
+								<p class="level-line">
+									<strong class="level-label">{lang.label}</strong>
+									{' · '}
+									{lang.value}
+								</p>
+							))
+						}
+					</div>
+				</section>
+			</aside>
+
+			<div class="cv-main">
+				<section aria-labelledby="experience-heading">
+					<h2 id="experience-heading">Work Experience</h2>
+					<ul class="entry-list">
+						{
+							experience.map((job) => (
+								<li class="entry">
+									<h3>{job.role}</h3>
+									<p class="entry-meta">
+										{job.org} &middot; {job.dates}
+									</p>
+									<ul class="entry-bullets">
+										{job.bullets.map((bullet) => (
+											<li>{bullet}</li>
+										))}
+									</ul>
+								</li>
+							))
+						}
+					</ul>
+				</section>
+
+				<section aria-labelledby="education-heading">
+					<h2 id="education-heading">Education</h2>
+					<ul class="entry-list">
+						{
+							education.map((entry) => (
+								<li class="entry">
+									<h3>{entry.degree}</h3>
+									<p class="entry-meta">
+										{entry.org} &middot; {entry.dates}
+									</p>
+									<ul class="entry-bullets">
+										{entry.bullets.map((bullet) => (
+											<li>{bullet}</li>
+										))}
+									</ul>
+								</li>
+							))
+						}
+					</ul>
+				</section>
+
+				<section aria-labelledby="research-heading">
+					<h2 id="research-heading">Research</h2>
+					<ul class="entry-list">
+						{
+							research.map((entry) => (
+								<li class="entry">
+									<h3>
+										{entry.href ? <a href={entry.href}>{entry.title}</a> : entry.title}
+									</h3>
+									<p class="entry-meta">
+										{entry.subtitle} &middot; {entry.dates}
+									</p>
+									<ul class="entry-bullets">
+										{entry.bullets.map((bullet) => (
+											<li>{bullet}</li>
+										))}
+									</ul>
+								</li>
+							))
+						}
+					</ul>
+				</section>
+			</div>
+		</div>
+	</section>
+</Base>
+
+<style>
+	.cv-page {
+		--cv-name-size: 1.75rem;
+		--cv-section-size: 0.8125rem;
+		--cv-entry-size: 1.0625rem;
+		--cv-body-size: 0.9375rem;
+		--cv-small-size: 0.8125rem;
+
+		padding-block: var(--space-4) var(--space-5);
+		font-size: var(--cv-body-size);
+	}
+
+	.cv-page-header {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: flex-start;
+		justify-content: space-between;
+		gap: var(--space-3);
+		margin-bottom: var(--space-5);
+		padding-bottom: var(--space-4);
+		border-bottom: 1px solid var(--color-border);
+	}
+
+	@media (max-width: 699px) {
+		.cv-page-header {
+			margin-bottom: var(--space-4);
+			padding-bottom: var(--space-3);
+		}
+	}
+
+	.eyebrow {
+		font-size: var(--cv-small-size);
+		font-weight: 600;
+		text-transform: uppercase;
+		letter-spacing: 0.08em;
+		color: var(--color-text-muted);
+		margin-bottom: var(--space-2);
+	}
+
+	.cv-page-header h1 {
+		font-family: var(--font-sans);
+		font-size: var(--cv-name-size);
+		font-weight: 700;
+		text-transform: uppercase;
+		letter-spacing: 0.02em;
+		margin-bottom: var(--space-1);
+	}
+
+	.cv-title {
+		font-size: var(--cv-body-size);
+		color: var(--color-text-muted);
+		margin-bottom: var(--space-3);
+	}
+
+	.cv-contact {
+		display: flex;
+		flex-wrap: wrap;
+		gap: var(--space-1) var(--space-3);
+		list-style: none;
+		margin-top: var(--space-2);
+		font-size: var(--cv-small-size);
+		color: var(--color-text-muted);
+	}
+
+	.cv-contact a {
+		color: inherit;
+	}
+
+	.cv-contact a:hover,
+	.cv-contact a:focus-visible {
+		color: var(--color-accent);
+	}
+
+	.cv-download {
+		display: inline-flex;
+		align-items: center;
+		min-height: 44px;
+		padding-inline: var(--space-3);
+		border: 1px solid var(--color-border);
+		text-decoration: none;
+		font-size: var(--cv-small-size);
+		font-weight: 600;
+		color: var(--color-text);
+		white-space: nowrap;
+		transition:
+			border-color 0.15s ease,
+			color 0.15s ease;
+	}
+
+	.cv-download:hover,
+	.cv-download:focus-visible {
+		border-color: var(--color-accent);
+		color: var(--color-accent);
+	}
+
+	.cv-layout {
+		display: flex;
+		flex-direction: column;
+		gap: var(--space-5);
+	}
+
+	.cv-sidebar,
+	.cv-main {
+		display: flex;
+		flex-direction: column;
+		gap: var(--space-4);
+		font-size: var(--cv-body-size);
+	}
+
+	.cv-sidebar {
+		background: var(--color-surface);
+		border: 1px solid var(--color-border);
+		padding: var(--space-3);
+	}
+
+	.cv-sidebar h2,
+	.cv-main h2 {
+		font-size: var(--cv-section-size);
+		font-weight: 700;
+		text-transform: uppercase;
+		letter-spacing: 0.08em;
+		color: var(--color-text);
+		margin-bottom: var(--space-2);
+	}
+
+	.skill-group {
+		margin-bottom: var(--space-2);
+	}
+
+	.skill-group h3 {
+		font-size: var(--cv-small-size);
+		font-weight: 600;
+		margin-bottom: 0.3em;
+	}
+
+	.level-list {
+		display: flex;
+		flex-direction: column;
+		gap: 0.35em;
+		font-size: var(--cv-small-size);
+	}
+
+	.level-line {
+		margin: 0;
+	}
+
+	.level-label {
+		font-weight: 600;
+	}
+
+	.entry-list {
+		list-style: disc;
+		padding-left: 1.2em;
+		display: flex;
+		flex-direction: column;
+		gap: var(--space-3);
+	}
+
+	.entry-list > .entry::marker {
+		color: var(--color-accent);
+	}
+
+	.entry h3 {
+		font-family: var(--font-sans);
+		font-size: var(--cv-entry-size);
+		font-weight: 600;
+	}
+
+	.entry h3 a {
+		text-decoration: none;
+		color: inherit;
+		border-bottom: 1px solid var(--color-border);
+		transition: border-color 0.15s ease;
+	}
+
+	.entry h3 a:hover,
+	.entry h3 a:focus-visible {
+		border-color: var(--color-accent);
+	}
+
+	.entry-meta {
+		font-size: var(--cv-small-size);
+		color: var(--color-text-muted);
+		margin-top: 0.2em;
+		margin-bottom: var(--space-2);
+	}
+
+	.entry-bullets {
+		display: flex;
+		flex-direction: column;
+		gap: 0.4em;
+		padding-left: 1.1em;
+	}
+
+	@media (min-width: 800px) {
+		.cv-layout {
+			flex-direction: row;
+			align-items: flex-start;
+		}
+
+		.cv-sidebar {
+			flex: 0 0 21rem;
+		}
+
+		.cv-main {
+			flex: 1;
+			min-width: 0;
+		}
+	}
+</style>
+
+<style is:global>
+	@media print {
+		.site-header,
+		.site-footer,
+		.cv-download {
+			display: none;
+		}
+
+		.cv-layout {
+			display: block;
+		}
+	}
+</style>

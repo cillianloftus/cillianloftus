@@ -1,0 +1,128 @@
+/* Tokens ------------------------------------------------------------- */
+
+:root {
+	--color-bg: #fdfdfc;
+	--color-text: #1a1a18;
+	--color-text-muted: #5c5c58;
+	--color-border: #d9d8d3;
+	--color-accent: #a8402f;
+	--color-surface: #f4f3ef;
+
+	--font-sans: 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+
+	/* fluid type scale */
+	--step--1: clamp(0.8rem, 0.78rem + 0.1vw, 0.89rem);
+	--step-0: clamp(1rem, 0.96rem + 0.2vw, 1.13rem);
+	--step-1: clamp(1.25rem, 1.19rem + 0.32vw, 1.42rem);
+	--step-2: clamp(1.56rem, 1.46rem + 0.5vw, 1.9rem);
+	--step-3: clamp(1.95rem, 1.8rem + 0.77vw, 2.44rem);
+	--step-4: clamp(2.44rem, 2.2rem + 1.19vw, 3.15rem);
+
+	--space-1: 0.5rem;
+	--space-2: 1rem;
+	--space-3: 1.5rem;
+	--space-4: 2.5rem;
+	--space-5: 4rem;
+
+	--content-width: 72rem;
+	--gutter: 1rem;
+
+	color-scheme: light;
+}
+
+@media (max-width: 699px) {
+	:root {
+		--gutter: 1.375rem;
+	}
+}
+
+@media (prefers-color-scheme: dark) {
+	:root {
+		--color-bg: #171715;
+		--color-text: #ecece8;
+		--color-text-muted: #a3a29c;
+		--color-border: #35342f;
+		--color-accent: #e0785f;
+		--color-surface: #1f1f1c;
+
+		color-scheme: dark;
+	}
+}
+
+/* Reset ---------------------------------------------------------------- */
+
+*,
+*::before,
+*::after {
+	box-sizing: border-box;
+}
+
+html {
+	-webkit-text-size-adjust: 100%;
+}
+
+body,
+h1,
+h2,
+h3,
+h4,
+p,
+figure {
+	margin: 0;
+}
+
+img,
+picture,
+video {
+	display: block;
+	max-width: 100%;
+}
+
+a {
+	color: inherit;
+}
+
+ul[class],
+ol[class] {
+	list-style: none;
+	margin: 0;
+	padding: 0;
+}
+
+/* Base ------------------------------------------------------------------ */
+
+body {
+	background: var(--color-bg);
+	color: var(--color-text);
+	font-family: var(--font-sans);
+	font-size: var(--step-0);
+	line-height: 1.5;
+	min-height: 100vh;
+}
+
+h1,
+h2,
+h3 {
+	line-height: 1.15;
+}
+
+a {
+	text-decoration-thickness: 1px;
+	text-underline-offset: 0.15em;
+}
+
+::selection {
+	background: var(--color-accent);
+	color: var(--color-bg);
+}
+
+@media (prefers-reduced-motion: reduce) {
+	*,
+	*::before,
+	*::after {
+		animation-duration: 0.01ms !important;
+		animation-iteration-count: 1 !important;
+		transition-duration: 0.01ms !important;
+		scroll-behavior: auto !important;
+	}
+}
