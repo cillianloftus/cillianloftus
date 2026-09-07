@@ -1,0 +1,65 @@
+---
+import Base from '../layouts/Base.astro';
+---
+
+<Base title="Page not found · Cillian Loftus" description="This page doesn't exist.">
+	<section class="not-found">
+		<p class="eyebrow">404</p>
+		<h1>Page not found.</h1>
+		<p class="lede">
+			That page doesn't exist, or hasn't been built yet — some sections of
+			this site are still in progress.
+		</p>
+		<a class="back-link" href="/">Back to home</a>
+	</section>
+</Base>
+
+<style>
+	.not-found {
+		padding-block: var(--space-5);
+		max-width: 32rem;
+	}
+
+	.eyebrow {
+		font-size: var(--step--1);
+		font-weight: 500;
+		text-transform: uppercase;
+		letter-spacing: 0.08em;
+		color: var(--color-text-muted);
+		margin-bottom: var(--space-2);
+	}
+
+	h1 {
+		font-size: var(--step-4);
+		font-weight: 500;
+		letter-spacing: -0.02em;
+		margin-bottom: var(--space-3);
+	}
+
+	.lede {
+		font-size: var(--step-1);
+		color: var(--color-text-muted);
+		margin-bottom: var(--space-4);
+	}
+
+	.back-link {
+		position: relative;
+		display: inline-flex;
+		align-items: center;
+		min-height: 44px;
+		text-decoration: none;
+		font-weight: 500;
+		color: var(--color-text);
+	}
+
+	.back-link::after {
+		content: '→';
+		margin-left: 0.4em;
+		transition: transform 0.2s ease;
+	}
+
+	.back-link:hover::after,
+	.back-link:focus-visible::after {
+		transform: translateX(0.25em);
+	}
+</style>

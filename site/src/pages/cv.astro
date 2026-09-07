@@ -1,5 +1,6 @@
 ---
 import Base from '../layouts/Base.astro';
+import Icon from '../components/icons/Icon.astro';
 
 const cvHref = '/cillian-loftus-cv.pdf';
 
@@ -111,8 +112,14 @@ const languages = [
 				<h1>Cillian Loftus</h1>
 				<p class="cv-title">Part 1 Architectural Assistant</p>
 				<ul class="cv-contact">
-					<li>Castlebar, Co. Mayo</li>
-					<li><a href="mailto:cillianloftus@gmail.com">cillianloftus@gmail.com</a></li>
+					<li>
+						<Icon name="location" size={14} />
+						Castlebar, Co. Mayo
+					</li>
+					<li>
+						<Icon name="email" size={14} />
+						<a href="mailto:cillianloftus@gmail.com">cillianloftus@gmail.com</a>
+					</li>
 				</ul>
 			</div>
 			<a class="cv-download" href={cvHref} download="Cillian Loftus - CV.pdf">Download PDF</a>
@@ -120,64 +127,68 @@ const languages = [
 
 		<div class="cv-layout">
 			<aside class="cv-sidebar">
-				<section aria-labelledby="about-heading">
-					<h2 id="about-heading">About Me</h2>
-					<p>{about}</p>
-				</section>
+				<div class="sidebar-panel sidebar-panel-top">
+					<section aria-labelledby="about-heading">
+						<h2 id="about-heading">About Me</h2>
+						<p>{about}</p>
+					</section>
+				</div>
 
-				<section aria-labelledby="skills-heading">
-					<h2 id="skills-heading">Skills</h2>
-					{
-						skillGroups.map((group) => (
-							<div class="skill-group">
-								<h3>{group.heading}</h3>
-								<div class="level-list">
-									{group.levels.map((level) => (
-										<p class="level-line">
-											{level.label && (
-												<>
-													<strong class="level-label">{level.label}</strong>
-													{' · '}
-												</>
-											)}
-											{level.items.join(', ')}
-										</p>
-									))}
+				<div class="sidebar-panel sidebar-panel-bottom">
+					<section aria-labelledby="awards-heading">
+						<h2 id="awards-heading">Awards</h2>
+						<ul class="entry-list">
+							{
+								awards.map((award) => (
+									<li class="entry">
+										<h3>{award.title}</h3>
+										<p class="entry-meta">{award.org}</p>
+										<p class="entry-description">{award.description}</p>
+									</li>
+								))
+							}
+						</ul>
+					</section>
+
+					<section aria-labelledby="skills-heading">
+						<h2 id="skills-heading">Skills</h2>
+						{
+							skillGroups.map((group) => (
+								<div class="skill-group">
+									<h3>{group.heading}</h3>
+									<div class="level-list">
+										{group.levels.map((level) => (
+											<p class="level-line">
+												{level.label && (
+													<>
+														<strong class="level-label">{level.label}</strong>
+														{' · '}
+													</>
+												)}
+												{level.items.join(', ')}
+											</p>
+										))}
+									</div>
 								</div>
-							</div>
-						))
-					}
-				</section>
-
-				<section aria-labelledby="awards-heading">
-					<h2 id="awards-heading">Awards</h2>
-					<ul class="entry-list">
-						{
-							awards.map((award) => (
-								<li class="entry">
-									<h3>{award.title}</h3>
-									<p class="entry-meta">{award.org}</p>
-									<p>{award.description}</p>
-								</li>
 							))
 						}
-					</ul>
-				</section>
+					</section>
 
-				<section aria-labelledby="languages-heading">
-					<h2 id="languages-heading">Languages</h2>
-					<div class="level-list">
-						{
-							languages.map((lang) => (
-								<p class="level-line">
-									<strong class="level-label">{lang.label}</strong>
-									{' · '}
-									{lang.value}
-								</p>
-							))
-						}
-					</div>
-				</section>
+					<section aria-labelledby="languages-heading">
+						<h2 id="languages-heading">Languages</h2>
+						<div class="level-list">
+							{
+								languages.map((lang) => (
+									<p class="level-line">
+										<strong class="level-label">{lang.label}</strong>
+										{' · '}
+										{lang.value}
+									</p>
+								))
+							}
+						</div>
+					</section>
+				</div>
 			</aside>
 
 			<div class="cv-main">
@@ -314,8 +325,24 @@ const languages = [
 		color: var(--color-text-muted);
 	}
 
+	@media (max-width: 699px) {
+		.cv-contact {
+			flex-direction: column;
+			align-items: flex-start;
+			gap: var(--space-1);
+		}
+	}
+
+	.cv-contact li {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.6em;
+	}
+
+
 	.cv-contact a {
 		color: inherit;
+		text-decoration: none;
 	}
 
 	.cv-contact a:hover,
@@ -365,6 +392,26 @@ const languages = [
 		padding: var(--space-3);
 	}
 
+	.cv-main {
+		gap: var(--space-3);
+	}
+
+	.cv-main > section + section {
+		border-top: 1px solid var(--color-border);
+		padding-top: var(--space-3);
+	}
+
+	.sidebar-panel {
+		display: flex;
+		flex-direction: column;
+		gap: var(--space-3);
+	}
+
+	.sidebar-panel > section + section {
+		border-top: 1px solid var(--color-border);
+		padding-top: var(--space-3);
+	}
+
 	.cv-sidebar h2,
 	.cv-main h2 {
 		font-size: var(--cv-section-size);
@@ -380,9 +427,9 @@ const languages = [
 	}
 
 	.skill-group h3 {
-		font-size: var(--cv-small-size);
-		font-weight: 600;
-		margin-bottom: 0.3em;
+		font-size: var(--cv-body-size);
+		font-weight: 700;
+		margin-bottom: 0.4em;
 	}
 
 	.level-list {
@@ -418,6 +465,10 @@ const languages = [
 		font-weight: 600;
 	}
 
+	.cv-sidebar .entry h3 {
+		font-size: var(--cv-body-size);
+	}
+
 	.entry h3 a {
 		text-decoration: none;
 		color: inherit;
@@ -437,6 +488,14 @@ const languages = [
 		margin-bottom: var(--space-2);
 	}
 
+	.entry-description {
+		font-size: var(--cv-small-size);
+	}
+
+	.cv-sidebar .entry-meta {
+		margin-bottom: 0.3em;
+	}
+
 	.entry-bullets {
 		display: flex;
 		flex-direction: column;
@@ -444,14 +503,48 @@ const languages = [
 		padding-left: 1.1em;
 	}
 
+	@media (max-width: 799px) {
+		.cv-layout {
+			gap: var(--space-4);
+		}
+
+		.cv-sidebar {
+			display: contents;
+		}
+
+		.sidebar-panel {
+			background: var(--color-surface);
+			border: 1px solid var(--color-border);
+			padding: var(--space-3);
+		}
+
+		.sidebar-panel-top {
+			order: 1;
+		}
+
+		.cv-main {
+			order: 2;
+		}
+
+		.sidebar-panel-bottom {
+			order: 3;
+		}
+	}
+
 	@media (min-width: 800px) {
 		.cv-layout {
 			flex-direction: row;
-			align-items: flex-start;
+			align-items: stretch;
 		}
 
 		.cv-sidebar {
 			flex: 0 0 21rem;
+			gap: var(--space-3);
+		}
+
+		.sidebar-panel-bottom {
+			border-top: 1px solid var(--color-border);
+			padding-top: var(--space-3);
 		}
 
 		.cv-main {

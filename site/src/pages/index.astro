@@ -26,22 +26,32 @@ const hubLinks = [
 ---
 
 <Base
-	title="Cillian Loftus · Architecture"
-	description="Portfolio, writing, and CV of Cillian Loftus, an architecture student at the University of Limerick."
+	title="Cillian Loftus"
+	description="Portfolio, CV, drawings and writing of Cillian Loftus, an architecture student at the University of Limerick."
 >
 	<section class="hero">
-		<p class="eyebrow">Architecture</p>
-		<h1>Drawings, studio work, and writing.</h1>
+		<p class="eyebrow">Architecture Student · Web Developer · Researcher</p>
+		<h1>A body of work in progress.</h1>
+		<p class="subtitle">
+			Drawn to adaptive reuse, the architecture of infrastructure, and the
+			occasional line of code.
+		</p>
 	</section>
 
 	<section class="hub">
-		<ul class="hub-grid">
+		<ul class="hub-list">
 			{
-				hubLinks.map((link) => (
+				hubLinks.map((link, index) => (
 					<li>
-						<a class="hub-card" href={link.href}>
-							<span class="hub-title">{link.title}</span>
-							<span class="hub-description">{link.description}</span>
+						<a class="hub-row" href={link.href}>
+							<span class="hub-copy">
+								<span class="hub-title-row">
+									<span class="hub-index">{String(index + 1).padStart(2, '0')}</span>
+									<span class="hub-title">{link.title}</span>
+								</span>
+								<span class="hub-description">{link.description}</span>
+							</span>
+							<span class="hub-arrow" aria-hidden="true">→</span>
 						</a>
 					</li>
 				))
@@ -53,7 +63,6 @@ const hubLinks = [
 <style>
 	.hero {
 		padding-block: var(--space-5) var(--space-4);
-		max-width: 44rem;
 	}
 
 	.eyebrow {
@@ -66,58 +75,95 @@ const hubLinks = [
 	}
 
 	.hero h1 {
+		max-width: 20ch;
 		font-size: var(--step-4);
 		font-weight: 500;
-		letter-spacing: -0.01em;
+		letter-spacing: -0.02em;
+		line-height: 1.05;
+	}
+
+	.subtitle {
+		max-width: 34rem;
+		margin-top: var(--space-3);
+		font-size: var(--step-1);
+		color: var(--color-text-muted);
 	}
 
 	.hub {
 		padding-block: var(--space-4) var(--space-5);
-		border-top: 1px solid var(--color-border);
 	}
 
-	.hub-grid {
-		display: grid;
-		grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr));
-		gap: var(--space-3);
+	.hub-list {
 		list-style: none;
 	}
 
-	.hub-card {
-		display: block;
-		height: 100%;
-		padding: var(--space-3);
-		border: 1px solid var(--color-border);
-		text-decoration: none;
-		color: inherit;
-		transition:
-			transform 0.2s ease,
-			border-color 0.2s ease;
+	.hub-list li {
+		border-top: 1px solid var(--color-border);
 	}
 
-	.hub-card:hover,
-	.hub-card:focus-visible {
-		transform: translateY(-2px);
-		border-color: var(--color-accent);
+	.hub-list li:last-child {
+		border-bottom: 1px solid var(--color-border);
+	}
+
+	.hub-row {
+		display: grid;
+		grid-template-columns: 1fr 1.5rem;
+		align-items: center;
+		gap: var(--space-3);
+		padding-block: var(--space-3);
+		text-decoration: none;
+		color: inherit;
+	}
+
+	.hub-copy {
+		display: flex;
+		flex-direction: column;
+		gap: 0.3em;
+	}
+
+	.hub-title-row {
+		display: flex;
+		align-items: baseline;
+		gap: 0.5em;
+	}
+
+	.hub-index {
+		font-size: var(--step-2);
+		font-weight: 300;
+		color: var(--color-text-muted);
+		font-variant-numeric: tabular-nums;
 	}
 
 	.hub-title {
-		display: block;
-		font-size: var(--step-1);
+		font-size: var(--step-2);
 		font-weight: 600;
-		margin-bottom: var(--space-1);
-	}
-
-	.hub-title::after {
-		content: '→';
-		margin-left: 0.5em;
-		color: var(--color-text-muted);
+		letter-spacing: -0.01em;
+		transition: color 0.15s ease;
 	}
 
 	.hub-description {
-		display: block;
 		font-size: var(--step--1);
 		color: var(--color-text-muted);
+		max-width: 34rem;
 	}
 
+	.hub-arrow {
+		justify-self: end;
+		font-size: var(--step-1);
+		color: var(--color-text-muted);
+		transition:
+			color 0.15s ease,
+			transform 0.15s ease;
+	}
+
+	.hub-row:hover .hub-title,
+	.hub-row:focus-visible .hub-title {
+		color: var(--color-accent);
+	}
+
+	.hub-row:hover .hub-arrow,
+	.hub-row:focus-visible .hub-arrow {
+		color: var(--color-accent);
+		transform: translateX(0.3em);
+	}
 </style>
