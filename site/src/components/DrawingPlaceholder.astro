@@ -9,8 +9,13 @@ const { drawing } = Astro.props;
 const label = [...drawing.projection, ...drawing.medium].join(' · ');
 ---
 
-<div class="drawing-placeholder" class:list={{ 'full-width': drawing.fullWidth }}>
-	<p class="tag">{label}</p>
+<div
+	class="drawing-placeholder"
+	class:list={{ 'full-width': drawing.fullWidth }}
+	role="img"
+	aria-label={drawing.alt || drawing.caption}
+>
+	<p class="tag" aria-hidden="true">{label}</p>
 </div>
 
 <style>

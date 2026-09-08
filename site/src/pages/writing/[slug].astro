@@ -37,6 +37,16 @@ const { entry } = Astro.props;
 		<div class="entry-body">
 			<p>{entry.body}</p>
 		</div>
+
+		{
+			entry.pdf && (
+				<p class="pdf-link">
+					<a href={entry.pdf} download>
+						Download PDF
+					</a>
+				</p>
+			)
+		}
 	</article>
 </Base>
 
@@ -86,5 +96,21 @@ const { entry } = Astro.props;
 		display: flex;
 		flex-direction: column;
 		gap: var(--space-3);
+	}
+
+	.pdf-link a {
+		display: inline-flex;
+		align-items: center;
+		min-height: 44px;
+		font-weight: 500;
+		color: var(--color-text);
+		text-decoration: underline;
+		text-underline-offset: 0.15em;
+		transition: color 0.15s ease;
+	}
+
+	.pdf-link a:hover,
+	.pdf-link a:focus-visible {
+		color: var(--color-accent);
 	}
 </style>

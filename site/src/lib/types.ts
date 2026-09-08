@@ -1,6 +1,6 @@
 export type Projection = 'plan' | 'section' | 'elevation' | 'axonometric' | 'perspective' | 'detail';
 
-export type Medium = 'sketch' | 'cad' | 'render' | 'model-photo' | 'collage';
+export type Medium = 'sketch' | 'hand-drawing' | 'cad' | 'render' | 'model-photo' | 'collage';
 
 export const PROJECTIONS: { value: Projection; label: string }[] = [
 	{ value: 'plan', label: 'Plan' },
@@ -13,6 +13,7 @@ export const PROJECTIONS: { value: Projection; label: string }[] = [
 
 export const MEDIUMS: { value: Medium; label: string }[] = [
 	{ value: 'sketch', label: 'Sketch' },
+	{ value: 'hand-drawing', label: 'Hand Drawing' },
 	{ value: 'cad', label: 'CAD' },
 	{ value: 'render', label: 'Render' },
 	{ value: 'model-photo', label: 'Model Photo' },
@@ -22,6 +23,7 @@ export const MEDIUMS: { value: Medium; label: string }[] = [
 export interface Drawing {
 	slug: string;
 	caption: string;
+	alt?: string;
 	projection: Projection[];
 	medium: Medium[];
 	fullWidth?: boolean;
@@ -34,6 +36,7 @@ export interface Project {
 	location: string;
 	type: string;
 	description: string;
+	role?: string;
 	drawings: Drawing[];
 	private?: boolean;
 	featured?: boolean;
@@ -48,5 +51,6 @@ export interface WritingEntry {
 	category: WritingCategory;
 	summary: string;
 	body: string;
+	pdf?: string;
 	draft?: boolean;
 }

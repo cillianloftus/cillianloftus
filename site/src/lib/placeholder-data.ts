@@ -4,13 +4,20 @@ export const projects: Project[] = [
 	{
 		slug: 'car-park-housing',
 		title: 'Car Park to Housing',
-		year: 'Year 1',
+		year: '2024',
 		location: 'Limerick City',
 		type: 'Housing',
 		description: 'A multi-storey car park in Limerick City reimagined as housing.',
+		role: 'Individual studio project',
 		featured: true,
 		drawings: [
-			{ slug: 'plan', caption: 'Ground floor plan', projection: ['plan'], medium: ['cad'] },
+			{
+				slug: 'plan',
+				caption: 'Ground floor plan',
+				alt: 'Ground floor plan of the car park to housing conversion, showing the new residential units inserted into the existing structural grid.',
+				projection: ['plan'],
+				medium: ['cad'],
+			},
 			{
 				slug: 'ramp-section',
 				caption: 'Cross section through the existing car park ramp',
@@ -37,10 +44,11 @@ export const projects: Project[] = [
 	{
 		slug: 'church-public-space',
 		title: 'Church as Public Space',
-		year: 'Year 2',
+		year: '2025',
 		location: 'Limerick City',
 		type: 'Public Space',
 		description: 'A former church adapted into public space with shelter provision.',
+		role: 'Individual studio project',
 		featured: true,
 		drawings: [
 			{ slug: 'plan', caption: 'Ground floor plan', projection: ['plan'], medium: ['sketch'] },
@@ -51,7 +59,12 @@ export const projects: Project[] = [
 				medium: ['render'],
 				fullWidth: true,
 			},
-			{ slug: 'west-elevation', caption: 'West elevation', projection: ['elevation'], medium: ['cad'] },
+			{
+				slug: 'west-elevation',
+				caption: 'West elevation, hand drawing',
+				projection: ['elevation'],
+				medium: ['hand-drawing'],
+			},
 			{
 				slug: 'site-axo',
 				caption: 'Site axonometric, hand-drawn collage',
@@ -70,10 +83,11 @@ export const projects: Project[] = [
 	{
 		slug: 'laneway-healthcare',
 		title: 'Laneway Block to Healthcare Centre',
-		year: 'Year 3',
+		year: '2026',
 		location: 'Limerick City',
 		type: 'Healthcare',
 		description: 'A laneway block in Limerick City reused as a healthcare centre.',
+		role: 'Individual studio project',
 		featured: true,
 		drawings: [
 			{

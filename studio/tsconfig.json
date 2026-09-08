@@ -1,0 +1,4 @@
+{
+	"extends": "@sanity/tsconfig/recommended",
+	"include": ["./schemas/**/*.ts", "./sanity.config.ts", "./sanity.cli.ts"]
+}

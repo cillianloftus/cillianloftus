@@ -9,10 +9,15 @@ const allDrawings = projects
 	.flatMap((project) =>
 		project.drawings.map((drawing) => ({
 			...drawing,
+			year: project.year,
 			projectSlug: project.slug,
 			projectTitle: project.title,
 		})),
 	);
+
+const YEARS = Array.from(new Set(allDrawings.map((d) => d.year)))
+	.sort((a, b) => b.localeCompare(a))
+	.map((year) => ({ value: year, label: year }));
 
 const projectionCounts = Object.fromEntries(
 	PROJECTIONS.map((p) => [p.value, allDrawings.filter((d) => d.projection.includes(p.value)).length]),
@@ -20,6 +25,7 @@ const projectionCounts = Object.fromEntries(
 const mediumCounts = Object.fromEntries(
 	MEDIUMS.map((m) => [m.value, allDrawings.filter((d) => d.medium.includes(m.value)).length]),
 );
+const yearCounts = Object.fromEntries(YEARS.map((y) => [y.value, allDrawings.filter((d) => d.year === y.value).length]));
 ---
 
 <Base
@@ -51,6 +57,15 @@ const mediumCounts = Object.fromEntries(
 					))
 				}
 			</div>
+			<div class="filter-row" role="group" aria-label="Filter by year">
+				{
+					YEARS.map((y) => (
+						<button type="button" class="filter-pill" data-axis="year" data-value={y.value} aria-pressed="false">
+							{y.label} <span class="pill-count">{yearCounts[y.value]}</span>
+						</button>
+					))
+				}
+			</div>
 		</div>
 
 		<ul class="drawing-list">
@@ -61,6 +76,7 @@ const mediumCounts = Object.fromEntries(
 						class:list={{ 'full-width': drawing.fullWidth }}
 						data-projection={drawing.projection.join(' ')}
 						data-medium={drawing.medium.join(' ')}
+						data-year={drawing.year}
 					>
 						<DrawingPlaceholder drawing={drawing} />
 						<p class="caption">
@@ -81,31 +97,60 @@ const mediumCounts = Object.fromEntries(
 		var pillButtons = Array.prototype.slice.call(root.querySelectorAll('.filter-pill'));
 		var items = Array.prototype.slice.call(root.querySelectorAll('.drawing-item'));
 
+		// Combinator for values selected within the same axis: 'and' means a drawing must
+		// match every selected pill (e.g. Plan + Axonometric shows only drawings tagged both),
+		// 'or' means matching any one is enough (e.g. 2024 + 2026 shows drawings from either).
+		// Different axes are always ANDed together regardless of their own combinator.
+		var AXES = [
+			{ key: 'projection', combinator: 'and' },
+			{ key: 'medium', combinator: 'and' },
+			{ key: 'year', combinator: 'or' },
+		];
+
 		function getStateFromURL() {
 			var params = new URLSearchParams(location.search);
-			return {
-				projection: new Set((params.get('projection') || '').split(',').filter(Boolean)),
-				medium: new Set((params.get('medium') || '').split(',').filter(Boolean)),
-			};
+			var state = {};
+			AXES.forEach(({ key }) => {
+				state[key] = new Set((params.get(key) || '').split(',').filter(Boolean));
+			});
+			return state;
 		}
 
 		function stateToURL(state) {
 			var params = new URLSearchParams();
-			if (state.projection.size) params.set('projection', Array.from(state.projection).join(','));
-			if (state.medium.size) params.set('medium', Array.from(state.medium).join(','));
+			AXES.forEach(({ key }) => {
+				if (state[key].size) params.set(key, Array.from(state[key]).join(','));
+			});
 			var qs = params.toString();
 			return qs ? location.pathname + '?' + qs : location.pathname;
 		}
 
 		function matches(item, state) {
-			var itemProjections = item.dataset.projection.split(' ');
-			var itemMediums = item.dataset.medium.split(' ');
-			var projectionOk = Array.from(state.projection).every((p) => itemProjections.includes(p));
-			var mediumOk = Array.from(state.medium).every((m) => itemMediums.includes(m));
-			return projectionOk && mediumOk;
+			return AXES.every(({ key, combinator }) => {
+				var selected = state[key];
+				if (selected.size === 0) return true;
+				var itemValues = item.dataset[key].split(' ');
+				if (combinator === 'or') {
+					return Array.from(selected).some((v) => itemValues.includes(v));
+				}
+				return Array.from(selected).every((v) => itemValues.includes(v));
+			});
 		}
 
 		function countFor(axis, value, state) {
+			var combinator = AXES.find((a) => a.key === axis).combinator;
+
+			if (combinator === 'or') {
+				// Values within an OR axis don't narrow each other, so show this value's own
+				// count under the other axes' current constraints, ignoring this axis's own
+				// selection (otherwise every not-yet-selected value in the row would read 0).
+				var trialState = {};
+				AXES.forEach(({ key }) => {
+					trialState[key] = key === axis ? new Set([value]) : state[key];
+				});
+				return items.filter((item) => matches(item, trialState)).length;
+			}
+
 			return items.filter((item) => {
 				if (!matches(item, state)) return false;
 				return item.dataset[axis].split(' ').includes(value);
@@ -114,6 +159,24 @@ const mediumCounts = Object.fromEntries(
 
 		function render() {
 			var state = getStateFromURL();
+
+			// A pill that's selected can be left stranded at zero results by a change
+			// elsewhere (most commonly: narrowing projection/medium zeroes out a year
+			// that's part of the OR-selected year row). Auto-deselect those rather than
+			// leave them highlighted while contributing nothing. Pruning only removes
+			// constraints, so this can't itself zero out anything else in the same pass.
+			var pruned = false;
+			AXES.forEach(({ key }) => {
+				Array.from(state[key]).forEach((value) => {
+					if (countFor(key, value, state) === 0) {
+						state[key].delete(value);
+						pruned = true;
+					}
+				});
+			});
+			if (pruned) {
+				history.replaceState(null, '', stateToURL(state));
+			}
 
 			pillButtons.forEach((btn) => {
 				var axis = btn.dataset.axis;

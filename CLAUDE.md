@@ -91,15 +91,20 @@ Settled — changing these later means redirects.
 ## Key features
 
 **Drawings index (`/drawings`)** — every drawing across all projects, filtered
-by pill toggles. Two rows: projection above, medium below. Selecting multiple
-pills, whether in the same row or across both rows, is always AND — a drawing
-must match every selected pill (e.g. Plan + Axonometric shows only drawings
-tagged as both, not either). Pill counts and disabled state reflect this: a
-pill's count is how many of the currently-visible drawings also carry that
-tag, so pills that would drop the result to zero grey out. No "All" pill —
-empty selection means everything. Filter state lives in the URL query string
-so it's linkable and back-button works. All drawings render at build time;
-filtering is show/hide via CSS class.
+by pill toggles. Three rows: projection, medium, year. Projection and medium
+are AND within their own row and across rows — a drawing must match every
+selected pill (e.g. Plan + Axonometric shows only drawings tagged as both,
+not either). Year is the one OR row: selecting 2026 and 2024 shows drawings
+from either year, since a drawing only ever has one. Year is still ANDed
+against whatever's selected in the other two rows. Pill counts reflect this
+per-row combinator: an AND-row pill shows how many of the currently-visible
+drawings also carry that tag (so it reads 0, and disables, once it can't
+narrow further); an OR-row pill shows its own count under the other rows'
+current constraints, ignoring its own row's selection (otherwise every
+not-yet-selected year would misleadingly read 0 the moment one year is
+picked). No "All" pill — empty selection means everything. Filter state
+lives in the URL query string so it's linkable and back-button works. All
+drawings render at build time; filtering is show/hide via CSS class.
 
 **Lightbox** — the one React island. Fits drawing to screen on open, then uses
 native browser pinch-zoom via `touch-action` rather than hand-rolled JS zoom.
@@ -162,5 +167,21 @@ password via a Pages Function. Never client-side password checks.
 
 ## Current status
 
-Fresh Astro scaffold. Next: Sanity schema, then the Studio, then the site
-shell and first templates.
+Site shell and first templates are built: home, CV, colophon, 404, and all
+four main nav destinations (`/portfolio`, `/drawings`, `/writing`) render
+against hand-written placeholder data in `site/src/lib/placeholder-data.ts`,
+typed by `site/src/lib/types.ts`.
+
+The Sanity schema and Studio are scaffolded (`studio/schemas/`: `project`,
+`drawing` (object), `writing`, `siteSettings`), and `site/src/lib/sanity.ts`
+has the client, GROQ queries, an image URL builder, and a portable-text-to-HTML
+helper ready to go. Neither is wired up to a live project yet — that needs a
+real Sanity project ID, which requires logging into a Sanity account
+(`npx sanity login` from `studio/`, or create one at sanity.io/manage), then
+setting `SANITY_PROJECT_ID` in both `site/.env` and `studio/.env` (see each
+directory's `.env.example`).
+
+Next once that's connected: swap the placeholder-data imports in the
+portfolio/drawings/writing pages for the real `sanity.ts` queries, migrate
+the real content over from placeholder-data.ts, and deploy the Studio
+(`npm run deploy` from `studio/`) to studio.cillianloftus.com.
