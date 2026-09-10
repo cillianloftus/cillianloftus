@@ -141,49 +141,78 @@ the page (respects the `/drawings` filter's `.is-hidden` state), in DOM
 order — on a project page the hero and the rest of the grid share one
 sequence.
 
-A single image that slides directionally on navigate, not a crossfade — a
-crossfade was tried first (simpler, and it sidestepped an earlier bug
-where a 3-slide peek-preview carousel showed inconsistent, distracting
-slivers of the neighbor for drawings of very different aspect ratios), but
-it read as an unrelated dissolve with no connection to the swipe/click that
-caused it. The current version keeps the single-image simplicity — no
-neighbor content is ever shown mid-transition — but moves the image itself:
-the outgoing drawing translates fully off in the direction it was
-swiped/navigated (a full stage-width translate, not the frame's own often-
-narrower width, so it's always genuinely clear of the stage) while the
-incoming one enters from the opposite side, so the motion reads as "this
-drawing moved that way." The image sits in a sized frame (a plain div,
-computed to pixel dimensions in JS from the trigger's known
-`data-aspect-ratio` and the stage's available space) filled via
-`object-fit: contain` — the frame resizes only once, synchronously, while
-parked fully off-screen mid-transition (still clipped by the stage's
-`overflow: hidden`), so a new drawing's different aspect ratio never
-visibly "grows" into place, and the frame's size also never changes as the
-image inside it goes from grid-thumbnail-res to full-res: CSS
-`aspect-ratio` on the `<img>` itself doesn't work for this, since once any
-real image loads its own intrinsic pixel size takes over sizing regardless
-of the declared ratio. A touch swipe drags the frame 1:1 with the finger
-(no animation, so it tracks exactly) and either continues on into a full
-navigation past the swipe threshold or springs back to rest. An
-`isAnimating` guard drops clicks/swipes/key presses that land mid-transition
-rather than letting them desync the index.
+Two frames slide directionally on navigate, not a crossfade — a crossfade
+was tried first (simpler, and it sidestepped an earlier bug where a
+3-slide peek-preview carousel showed inconsistent, distracting slivers of
+the neighbor for drawings of very different aspect ratios), but it read as
+an unrelated dissolve with no connection to the swipe/click that caused
+it. A single-frame directional slide (park-and-swap: exit fully, re-source
+while off-screen, enter fully, as two sequential legs) was tried next and
+fixed that, but the two legs running one after another read as "swipe out,
+*then* swipe in" — connected in direction but not in time, and doubling
+the perceived duration in the process. The current version runs both
+frames at once: the outgoing drawing and the incoming one are two sibling
+frames animating in the same motion, the outgoing one translating fully
+off in the direction it was swiped/navigated (a full stage-width
+translate, not either frame's own often-narrower width, so it's always
+genuinely clear of the stage) while the incoming one enters from the
+opposite side over the *same* span of time, so the two read as one motion
+influencing each other rather than a cut between two animations. Each
+drawing sits in its own sized frame (a plain div, computed to pixel
+dimensions in JS from the trigger's known `data-aspect-ratio` and the
+stage's available space) filled via `object-fit: contain`, absolutely
+positioned and self-centered in the stage via `translate(-50%, -50%)` so
+either frame's own size never depends on the other's — the incoming
+frame's size is set once, synchronously, before it's ever visible (it
+starts parked off-screen, still clipped by the stage's `overflow:
+hidden`), so a new drawing's different aspect ratio never visibly "grows"
+into place, matching the old single-frame guarantee. CSS `aspect-ratio` on
+the `<img>` itself doesn't work for this, since once any real image loads
+its own intrinsic pixel size takes over sizing regardless of the declared
+ratio. Only one frame is ever the "active" one at rest — the idle frame's
+`visibility` is toggled off between navigations, and which physical frame
+element is "active" flips after every committed navigation rather than
+re-sourcing a single persistent frame, so both are always ready to run the
+next transition in either direction. A touch swipe drags the active frame
+1:1 with the finger (no animation, so it tracks exactly) while the idle
+frame simultaneously tracks in from whichever edge the drag direction
+implies — reloading which neighbor it holds if the drag reverses — so the
+drag itself already reads as connected, before any release/commit
+animation runs. Past the swipe threshold this continues smoothly into a
+full navigation from wherever the drag left off; below it, both frames
+spring back together. An `isAnimating` guard drops clicks/swipes/key
+presses that land mid-transition rather than letting them desync the
+index.
 
-The slide's two legs (exit, then the parked swap, then entry) run through
-the Web Animations API (`frame.animate(...)`), not a CSS transition class —
-deliberately. Going out-and-back-in needs an instantaneous, untransitioned
-jump between the two legs, and a CSS transition animates from whatever the
-element's *rendered* state happens to be; whether the browser has actually
-painted that jump before the next transition starts isn't guaranteed by a
-single `requestAnimationFrame`, and if it hasn't, the browser can coalesce
-both writes and animate straight through from the exit's end position to
-the entry's end position, skipping the jump — so the new drawing looks like
-it's still entering from the side it just exited on instead of the opposite
-one. A WAAPI animation's keyframes are explicit values, not "wherever the
-element currently is," so there's nothing timing-dependent for the browser
-to elide. Verified by slowing the *actual* browser-native animation to 5%
-speed via Chrome DevTools Protocol's `Animation.setPlaybackRate` (not a
-hand-rolled slow-motion double) and catching it mid-flight, genuinely
-approaching from the correct side.
+The slide runs through the Web Animations API (`el.animate(...)` on each
+frame, both started together and awaited via `Promise.all`), not a CSS
+transition class — deliberately. A live-drag release needs to hand off
+from wherever the finger left the frame (an arbitrary, continuously
+changing position) into an animation with explicit start and end values,
+and a CSS transition animates from whatever the element's *rendered*
+state happens to be; whether the browser has actually painted the drag's
+last direct style write before the transition starts isn't guaranteed by
+a single `requestAnimationFrame`. A WAAPI animation's keyframes are
+explicit values, not "wherever the element currently is," so there's
+nothing timing-dependent for the browser to elide — both frames' `from`
+values are read directly off the drag state (or `0`/`±slideDistance` for
+a button/key nav starting at rest) and passed straight into the keyframes.
+Verified by slowing the *actual* browser-native animation to 5% speed via
+Chrome DevTools Protocol's `Animation.setPlaybackRate` (not a hand-rolled
+slow-motion double) and catching it mid-flight — both frames visible and
+animating simultaneously with distinct, correctly-signed transforms,
+confirmed via a scripted Playwright session rather than by eye.
+
+Because the slide runs through WAAPI rather than a CSS transition, it's
+invisible to the site-wide `prefers-reduced-motion` rule in `global.css`
+(that rule only zeroes `animation-duration`/`transition-duration`, which
+`el.animate()` never touches) — so the lightbox checks the media query
+itself and collapses the slide to 1ms whenever it matches, live via the
+query's `change` event rather than read once, so toggling the OS setting
+mid-session takes effect immediately. Live touch-drag tracking is
+untouched either way, reduced motion or not: it's direct 1:1 finger
+tracking with no animation to begin with, and user-initiated drag isn't
+the kind of motion the preference is meant to suppress.
 
 Touch zoom is native browser pinch-zoom, not hand-rolled: the stage uses
 `touch-action: pinch-zoom` so a pinch reaches the browser untouched, and
@@ -209,7 +238,7 @@ on close; Tab cycles only through the dialog's own controls while open.
 Caption below the image, not overlaid. Both zoom mechanisms reset (native
 via a brief viewport-meta toggle, the desktop one via internal state)
 whenever you navigate or close, so the next image never opens still zoomed
-in from the last one. Backdrop is black at 80% opacity, not fully solid —
+in from the last one. Backdrop is black at 75% opacity, not fully solid —
 the site stays faintly visible behind it, deliberately.
 
 Grid thumbnails that open the lightbox (`button.drawing-image` in
@@ -324,11 +353,19 @@ columns: normal (1), large (2), full (all current columns — converges with
 large at the 2-column breakpoint, and with normal at 1 column). Re-runs on
 filter changes and window resize.
 
-The Portfolio project page: hero (first drawing, capped height, centered)
+The Portfolio project page: hero (first drawing, capped height, left-aligned)
 above a short prose description (`project.description`, plain rich text —
 keep it to a sentence or two, this is a summary not the full write-up) above
 the rest of the drawings in the masonry grid. Tried a side-by-side hero/
 description layout; reverted since it only worked with a long description.
+The hero's height cap (`maxHeight` prop on `DrawingImage`) also drops the
+component's usual `width: 100%` — a height-capped box that stays full-width
+stops matching the image's own aspect ratio once the cap kicks in, so the
+leftover space showed through as flat `--color-surface` background on either
+side. Letting width track the aspect ratio instead means the box always
+hugs the image exactly; `.hero-thumb` shrink-wraps to that resolved width
+(`width: fit-content`) and pins itself to the left edge (`align-self:
+flex-start`) rather than being centered or stretched.
 
 Gotcha specific to `getStaticPaths`: unlike a plain page's frontmatter
 (which re-fetches every request in dev), Astro computes `getStaticPaths`

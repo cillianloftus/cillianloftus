@@ -19,6 +19,7 @@ import Icon from './icons/Icon.astro';
 
 	<div class="lightbox-stage" data-lightbox-close>
 		<div class="lightbox-frame"><img class="lightbox-image" alt="" /></div>
+		<div class="lightbox-frame"><img class="lightbox-image" alt="" /></div>
 	</div>
 
 	<div class="lightbox-footer">
@@ -31,6 +32,24 @@ import Icon from './icons/Icon.astro';
 	const SWIPE_THRESHOLD = 60;
 	const DISMISS_THRESHOLD = 80;
 	const DESKTOP_ZOOM_SCALE = 2.2;
+	const SLIDE_DURATION = 320;
+	const REDUCED_SLIDE_DURATION = 1;
+	const SLIDE_EASING = 'cubic-bezier(0.22, 0.61, 0.36, 1)';
+
+	// The slide runs through the Web Animations API, not a CSS
+	// transition/animation, so the site's global `prefers-reduced-motion`
+	// rule (global.css, which only zeroes `animation-duration` and
+	// `transition-duration`) never touches it — checked here instead, and
+	// live via the query's own change event rather than read once, so
+	// toggling the OS setting while the lightbox is open takes effect
+	// immediately. Live touch-drag tracking is untouched either way: it's
+	// direct 1:1 finger tracking with no animation to begin with, and
+	// user-initiated drag isn't the kind of motion this preference targets.
+	const reduceMotionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+	let reduceMotion = reduceMotionQuery.matches;
+	reduceMotionQuery.addEventListener('change', (e) => {
+		reduceMotion = e.matches;
+	});
 
 	function initLightbox() {
 		const lightbox = document.getElementById('lightbox');
@@ -46,14 +65,13 @@ import Icon from './icons/Icon.astro';
 		}
 
 		const stageEl = lightbox.querySelector<HTMLElement>('.lightbox-stage');
-		const frameEl = lightbox.querySelector<HTMLElement>('.lightbox-frame');
-		const imgEl = lightbox.querySelector<HTMLImageElement>('.lightbox-image');
+		const frameEls = Array.from(lightbox.querySelectorAll<HTMLElement>('.lightbox-frame'));
 		const captionElEl = lightbox.querySelector<HTMLElement>('[data-lightbox-caption]');
 		const countElEl = lightbox.querySelector<HTMLElement>('[data-lightbox-count]');
 		const prevBtnEl = lightbox.querySelector<HTMLButtonElement>('.lightbox-prev');
 		const nextBtnEl = lightbox.querySelector<HTMLButtonElement>('.lightbox-next');
 		const closeTargets = lightbox.querySelectorAll<HTMLElement>('[data-lightbox-close]');
-		if (!stageEl || !frameEl || !imgEl || !captionElEl || !countElEl || !prevBtnEl || !nextBtnEl) {
+		if (frameEls.length !== 2 || !stageEl || !captionElEl || !countElEl || !prevBtnEl || !nextBtnEl) {
 			return;
 		}
 
@@ -61,18 +79,41 @@ import Icon from './icons/Icon.astro';
 		// the closures below (it doesn't do this for the original bindings).
 		const lightboxEl = lightbox;
 		const stage = stageEl;
-		const frame = frameEl;
-		const img = imgEl;
 		const captionEl = captionElEl;
 		const countEl = countElEl;
 		const prevBtn = prevBtnEl;
 		const nextBtn = nextBtnEl;
 
+		// Two frames, not one. The whole point of this rewrite is that a
+		// navigation is a single motion where the outgoing and incoming
+		// drawings move together — the old one sliding out and the new one
+		// sliding in have to be visible and animating at the same time, which
+		// is impossible with a single frame that's re-sourced mid-transition.
+		// "active" is whichever frame is showing the current drawing at rest;
+		// the other one is idle (hidden) except while a navigation — a
+		// button/key press, or a live touch drag — is in progress, when it
+		// carries the adjacent drawing in from the opposite edge.
+		type FrameRef = { el: HTMLElement; img: HTMLImageElement };
+		const frames: FrameRef[] = frameEls.map((el) => ({
+			el,
+			img: el.querySelector('img') as HTMLImageElement,
+		}));
+		let activeIndex = 0;
+
 		let currentIndex = -1;
 		let opener: HTMLElement | null = null;
 		let isAnimating = false;
 		let drag: { startX: number; startY: number; dx: number; dy: number; axis: 'x' | 'y' | null } | null = null;
+		// Locked in as soon as a horizontal drag's direction is known (not
+		// necessarily equal to the final swipe direction — it can flip if the
+		// user reverses mid-drag), so the drag handlers and the release/commit
+		// logic agree on which neighbor is currently loaded into the idle frame.
+		let dragDirection: 1 | -1 | null = null;
 		const preloaded = new Set<string>();
+
+		function wrap(n: number, len: number) {
+			return ((n % len) + len) % len;
+		}
 
 		// Desktop (mouse) zoom. Native pinch-zoom only exists for touch, so a
 		// mouse user has no way to zoom at all without this — click toggles a
@@ -105,11 +146,12 @@ import Icon from './icons/Icon.astro';
 		}
 
 		function applyDesktopZoomTransform() {
+			const img = frames[activeIndex].img;
 			img.style.transform = desktopZoomed ? `translate(${panX}px, ${panY}px) scale(${DESKTOP_ZOOM_SCALE})` : '';
 		}
 
 		function clampPan() {
-			const frameRect = frame.getBoundingClientRect();
+			const frameRect = frames[activeIndex].el.getBoundingClientRect();
 			const maxX = (frameRect.width * (DESKTOP_ZOOM_SCALE - 1)) / 2;
 			const maxY = (frameRect.height * (DESKTOP_ZOOM_SCALE - 1)) / 2;
 			panX = Math.min(maxX, Math.max(-maxX, panX));
@@ -120,30 +162,43 @@ import Icon from './icons/Icon.astro';
 			desktopZoomed = value;
 			panX = 0;
 			panY = 0;
-			img.classList.toggle('is-zoomed', desktopZoomed);
+			frames[activeIndex].img.classList.toggle('is-zoomed', desktopZoomed);
 			applyDesktopZoomTransform();
 		}
 
-		// The frame's pixel size is computed directly here, from the trigger's
-		// known aspect ratio and the stage's available space — rather than
-		// relying on CSS aspect-ratio, which doesn't resolve predictably once a
-		// real image with its own intrinsic size loads into it. This runs
-		// before any pixel of either the thumbnail or full-res image has
+		// The stage's available space, cached rather than read fresh in
+		// sizeFrame every time a navigation starts. sizeFrame runs right
+		// after a style write (the idle frame's visibility flipping on), so
+		// reading layout-dependent properties there would force a
+		// synchronous reflow at exactly the moment a slide needs to start
+		// smoothly — this way that read only happens on open and on resize,
+		// when a one-time layout cost doesn't read as a stutter.
+		let stageAvailW = 0;
+		let stageAvailH = 0;
+
+		function measureStage() {
+			const stageStyle = getComputedStyle(stage);
+			stageAvailW = stage.clientWidth - parseFloat(stageStyle.paddingLeft) - parseFloat(stageStyle.paddingRight);
+			stageAvailH = stage.clientHeight - parseFloat(stageStyle.paddingTop) - parseFloat(stageStyle.paddingBottom);
+		}
+
+		// A frame's pixel size is computed directly here, from the trigger's
+		// known aspect ratio and the stage's cached available space — rather
+		// than relying on CSS aspect-ratio, which doesn't resolve predictably
+		// once a real image with its own intrinsic size loads into it. This
+		// runs before any pixel of either the thumbnail or full-res image has
 		// loaded, so the box is already the right size and never resizes once
 		// a higher-res image swaps in.
-		function sizeFrame(ratio: number) {
+		function sizeFrame(el: HTMLElement, ratio: number) {
 			if (!Number.isFinite(ratio) || ratio <= 0) return;
-			const stageStyle = getComputedStyle(stage);
-			const availW = stage.clientWidth - parseFloat(stageStyle.paddingLeft) - parseFloat(stageStyle.paddingRight);
-			const availH = stage.clientHeight - parseFloat(stageStyle.paddingTop) - parseFloat(stageStyle.paddingBottom);
-			let w = availW;
+			let w = stageAvailW;
 			let h = w / ratio;
-			if (h > availH) {
-				h = availH;
+			if (h > stageAvailH) {
+				h = stageAvailH;
 				w = h * ratio;
 			}
-			frame.style.width = `${Math.max(w, 0)}px`;
-			frame.style.height = `${Math.max(h, 0)}px`;
+			el.style.width = `${Math.max(w, 0)}px`;
+			el.style.height = `${Math.max(h, 0)}px`;
 		}
 
 		// Warms the full-res asset for whichever drawing prev/next would land
@@ -161,39 +216,43 @@ import Icon from './icons/Icon.astro';
 			});
 		}
 
-		function loadCurrent(triggers: HTMLElement[]) {
-			const trigger = triggers[currentIndex];
-			if (!trigger) return;
-
-			sizeFrame(parseFloat(trigger.dataset.aspectRatio || ''));
+		// Loads a trigger's content into a given frame — sizing plus image
+		// src, nothing about caption/count, since those only ever describe
+		// whichever trigger is currentIndex, not whatever's momentarily
+		// loaded into the idle frame mid-drag.
+		function loadInto(frame: FrameRef, trigger: HTMLElement) {
+			sizeFrame(frame.el, parseFloat(trigger.dataset.aspectRatio || ''));
 
 			const thumb = trigger.querySelector('img');
-			img.src = thumb?.currentSrc || thumb?.src || trigger.dataset.fullSrc || '';
-			img.alt = trigger.dataset.alt || trigger.dataset.caption || '';
+			frame.img.src = thumb?.currentSrc || thumb?.src || trigger.dataset.fullSrc || '';
+			frame.img.alt = trigger.dataset.alt || trigger.dataset.caption || '';
 
 			const fullSrc = trigger.dataset.fullSrc;
 			if (fullSrc) {
 				preloaded.add(fullSrc);
 				const preload = new Image();
 				preload.onload = () => {
-					img.src = fullSrc;
+					frame.img.src = fullSrc;
 				};
 				preload.src = fullSrc;
 			}
+		}
 
+		function updateMeta(triggers: HTMLElement[]) {
+			const trigger = triggers[currentIndex];
+			if (!trigger) return;
 			captionEl.textContent = trigger.dataset.caption || '';
 			const multiple = triggers.length > 1;
 			countEl.textContent = multiple ? `${currentIndex + 1} / ${triggers.length}` : '';
 			prevBtn.hidden = !multiple;
 			nextBtn.hidden = !multiple;
-
-			preloadNeighbors(triggers);
 		}
 
 		function resizeFrame() {
+			measureStage();
 			const triggers = getVisibleTriggers();
 			const trigger = triggers[currentIndex];
-			if (trigger) sizeFrame(parseFloat(trigger.dataset.aspectRatio || ''));
+			if (trigger) sizeFrame(frames[activeIndex].el, parseFloat(trigger.dataset.aspectRatio || ''));
 		}
 
 		window.addEventListener('resize', resizeFrame);
@@ -201,10 +260,20 @@ import Icon from './icons/Icon.astro';
 		function open(index: number, openedFrom: HTMLElement) {
 			const triggers = getVisibleTriggers();
 			if (!triggers.length) return;
-			currentIndex = ((index % triggers.length) + triggers.length) % triggers.length;
+			currentIndex = wrap(index, triggers.length);
 			opener = openedFrom;
-			setFrameX(0);
-			loadCurrent(triggers);
+			activeIndex = 0;
+			// Re-measured on every open, not just once at page load: opening
+			// the lightbox sets body overflow to hidden, which can change the
+			// scrollbar's presence and shift the viewport's available width.
+			measureStage();
+			frames[0].el.style.visibility = 'visible';
+			frames[1].el.style.visibility = 'hidden';
+			setFrameX(frames[0].el, 0);
+			setFrameX(frames[1].el, 0);
+			loadInto(frames[0], triggers[currentIndex]);
+			updateMeta(triggers);
+			preloadNeighbors(triggers);
 			lightboxEl.removeAttribute('inert');
 			lightboxEl.classList.add('is-open');
 			document.body.style.overflow = 'hidden';
@@ -221,80 +290,104 @@ import Icon from './icons/Icon.astro';
 			stage.classList.remove('is-dragging');
 			stage.style.transform = '';
 			stage.style.opacity = '';
+			drag = null;
+			dragDirection = null;
+			frames[1 - activeIndex].el.style.visibility = 'hidden';
 			opener?.focus();
 		}
 
-		// A directional slide, not a crossfade — the outgoing image travels
-		// off in the direction it was swiped/navigated and the new one enters
-		// from the opposite side, so the motion actually reads as "this drawing
-		// moved that way" rather than an unrelated dissolve. Slides the full
-		// stage width rather than the frame's own (often narrower) width, so
-		// the exit is always genuinely off-screen regardless of the drawing's
-		// aspect ratio.
+		// The full stage width, not either frame's own (often narrower) width,
+		// so a slide is always genuinely clear of the stage regardless of the
+		// drawing's aspect ratio.
 		function slideDistance() {
 			return stage.clientWidth;
 		}
 
-		// Tracked directly rather than read back from the DOM (getComputedStyle
-		// would force a synchronous layout flush on every call, and parsing a
-		// matrix() string back out is its own source of bugs).
-		let currentX = 0;
-
-		function setFrameX(px: number) {
-			currentX = px;
-			frame.style.transform = `translateX(${px}px)`;
+		function setFrameX(el: HTMLElement, px: number) {
+			el.style.transform = `translate(-50%, -50%) translateX(${px}px)`;
 		}
 
-		// Runs one leg of the slide as an explicit Web Animations API keyframe
+		// Runs a leg of the slide as an explicit Web Animations API keyframe
 		// animation rather than a CSS transition. A CSS transition animates
-		// from whatever the element's rendered state happens to be, which is
-		// exactly the problem: going out-and-back-in requires an instantaneous,
-		// untransitioned jump between the two legs, and whether the browser
-		// has actually painted that jump before the next transition starts
-		// isn't guaranteed by a single requestAnimationFrame — if it hasn't,
-		// the browser can coalesce both writes and animate straight through
-		// from the first leg's start to the second leg's end, skipping the
-		// jump, so the "new" image looks like it's still entering from the
-		// side it just exited on. A WAAPI animation's keyframes are explicit
-		// values, not "wherever the element currently is," so there's nothing
-		// for the browser to elide: it plays exactly the two values given.
-		function animateFrameX(fromPx: number, toPx: number): Promise<void> {
+		// from whatever the element's rendered state happens to be, which
+		// matters once two frames are animating together from a live-drag
+		// position: a WAAPI animation's keyframes are explicit values, so
+		// there's nothing timing-dependent for the browser to elide between
+		// the drag's last direct style write and the animation's first frame.
+		function animateFrameX(el: HTMLElement, fromPx: number, toPx: number): Promise<void> {
 			return new Promise((resolve) => {
-				const anim = frame.animate(
-					[{ transform: `translateX(${fromPx}px)` }, { transform: `translateX(${toPx}px)` }],
-					{ duration: 320, easing: 'cubic-bezier(0.22, 0.61, 0.36, 1)', fill: 'forwards' },
+				const anim = el.animate(
+					[
+						{ transform: `translate(-50%, -50%) translateX(${fromPx}px)` },
+						{ transform: `translate(-50%, -50%) translateX(${toPx}px)` },
+					],
+					{ duration: reduceMotion ? REDUCED_SLIDE_DURATION : SLIDE_DURATION, easing: SLIDE_EASING, fill: 'forwards' },
 				);
 				anim.finished
 					.then(() => {
 						anim.cancel();
-						setFrameX(toPx);
+						setFrameX(el, toPx);
 						resolve();
 					})
 					.catch(() => resolve());
 			});
 		}
 
-		async function beginSlide(direction: 1 | -1) {
+		// The outgoing and incoming drawings slide as one motion: both frames
+		// animate at once, the active one leaving in `direction` while the
+		// idle one arrives from the opposite edge — not two animations run
+		// back to back. `startDx` lets this continue smoothly from wherever a
+		// live drag left off rather than always starting at rest; when the
+		// drag already loaded and positioned the idle frame (`alreadyPrepared`),
+		// this only has to animate it home instead of re-doing that setup.
+		function slideTo(direction: 1 | -1, startDx = 0, alreadyPrepared = false): Promise<void> {
+			const triggers = getVisibleTriggers();
+			if (triggers.length <= 1) return Promise.resolve();
 			isAnimating = true;
 			resetZoom();
-			await animateFrameX(currentX, -direction * slideDistance());
 
-			const triggers = getVisibleTriggers();
-			currentIndex = ((currentIndex + direction) % triggers.length + triggers.length) % triggers.length;
-			// Resized and re-sourced while parked fully off-screen (still
-			// clipped by the stage's overflow:hidden), so swapping to a
-			// drawing with a different aspect ratio never visibly "grows".
-			loadCurrent(triggers);
-			setFrameX(direction * slideDistance());
+			const nextIndex = wrap(currentIndex + direction, triggers.length);
+			const active = frames[activeIndex];
+			const incoming = frames[1 - activeIndex];
 
-			await animateFrameX(currentX, 0);
-			isAnimating = false;
+			if (!alreadyPrepared) {
+				incoming.el.style.visibility = 'visible';
+				loadInto(incoming, triggers[nextIndex]);
+				setFrameX(incoming.el, direction * slideDistance() + startDx);
+			}
+
+			return Promise.all([
+				animateFrameX(active.el, startDx, -direction * slideDistance()),
+				animateFrameX(incoming.el, direction * slideDistance() + startDx, 0),
+			]).then(() => {
+				active.el.style.visibility = 'hidden';
+				currentIndex = nextIndex;
+				activeIndex = 1 - activeIndex;
+				updateMeta(triggers);
+				preloadNeighbors(triggers);
+				isAnimating = false;
+			});
+		}
+
+		// Below the swipe threshold: both frames return to rest together
+		// rather than just the active one, since the idle frame was already
+		// visibly following the drag.
+		function springBack(direction: 1 | -1, startDx: number): Promise<void> {
+			isAnimating = true;
+			const active = frames[activeIndex];
+			const incoming = frames[1 - activeIndex];
+			return Promise.all([
+				animateFrameX(active.el, startDx, 0),
+				animateFrameX(incoming.el, startDx + direction * slideDistance(), direction * slideDistance()),
+			]).then(() => {
+				incoming.el.style.visibility = 'hidden';
+				isAnimating = false;
+			});
 		}
 
 		function goTo(direction: 1 | -1) {
-			const triggers = getVisibleTriggers();
-			if (isAnimating || triggers.length <= 1) return;
-			beginSlide(direction);
+			if (isAnimating) return;
+			slideTo(direction);
 		}
 
 		function onKeydown(e: KeyboardEvent) {
@@ -344,21 +437,31 @@ import Icon from './icons/Icon.astro';
 		nextBtn.addEventListener('click', () => goTo(1));
 
 		// Desktop zoom: click toggles a fixed zoom level, drag pans while
-		// zoomed. Only the current image is ever wired up (its element
-		// identity persists across navigations — only its src changes — so
-		// this only needs to run once).
-		img.addEventListener('mousedown', (e) => {
-			if (e.button !== 0 || isAnimating) return;
-			isMouseDown = true;
-			mouseDownPos = { x: e.clientX, y: e.clientY };
-			mouseMoveDistance = 0;
-			if (desktopZoomed) {
-				isPanningMouse = true;
-				panPointerStart = { x: e.clientX, y: e.clientY };
-				panOriginStart = { x: panX, y: panY };
-				e.preventDefault();
-			}
-		});
+		// zoomed. Both frames' images are wired up the same way (each
+		// element identity persists across navigations — only its src
+		// changes — so this only needs to run once each), guarded so only
+		// the currently-active one actually responds.
+		function attachZoomHandlers(frame: FrameRef) {
+			frame.img.addEventListener('mousedown', (e) => {
+				if (frames[activeIndex] !== frame || e.button !== 0 || isAnimating) return;
+				isMouseDown = true;
+				mouseDownPos = { x: e.clientX, y: e.clientY };
+				mouseMoveDistance = 0;
+				if (desktopZoomed) {
+					isPanningMouse = true;
+					panPointerStart = { x: e.clientX, y: e.clientY };
+					panOriginStart = { x: panX, y: panY };
+					e.preventDefault();
+				}
+			});
+
+			frame.img.addEventListener('click', () => {
+				// A real drag-to-pan shouldn't also toggle zoom off on release.
+				if (frames[activeIndex] !== frame || isAnimating || mouseMoveDistance > 4) return;
+				setDesktopZoom(!desktopZoomed);
+			});
+		}
+		frames.forEach(attachZoomHandlers);
 
 		window.addEventListener('mousemove', (e) => {
 			if (!isMouseDown) return;
@@ -378,12 +481,6 @@ import Icon from './icons/Icon.astro';
 			isPanningMouse = false;
 		});
 
-		img.addEventListener('click', () => {
-			// A real drag-to-pan shouldn't also toggle zoom off on release.
-			if (isAnimating || mouseMoveDistance > 4) return;
-			setDesktopZoom(!desktopZoomed);
-		});
-
 		// Single-finger swipe navigates/dismisses; two fingers (or an active
 		// pinch-zoom) are left alone so the browser's native zoom takes over.
 		stage.addEventListener(
@@ -395,6 +492,7 @@ import Icon from './icons/Icon.astro';
 				}
 				const t = e.touches[0];
 				drag = { startX: t.clientX, startY: t.clientY, dx: 0, dy: 0, axis: null };
+				dragDirection = null;
 			},
 			{ passive: true },
 		);
@@ -411,7 +509,33 @@ import Icon from './icons/Icon.astro';
 					if (drag.axis === 'y') stage.classList.add('is-dragging');
 				}
 				if (drag.axis === 'x') {
-					setFrameX(drag.dx);
+					setFrameX(frames[activeIndex].el, drag.dx);
+
+					// The idle frame carries the adjacent drawing in from the
+					// opposite edge in lockstep with the drag, so the two
+					// read as one connected motion rather than the active
+					// image just sliding off into nothing. Which neighbor
+					// that is follows the live drag direction, and swaps if
+					// the user reverses mid-drag.
+					const dir: 1 | -1 | null = drag.dx < 0 ? 1 : drag.dx > 0 ? -1 : dragDirection;
+					if (dir && dir !== dragDirection) {
+						// Only walk the page's [data-lightbox] elements when the
+						// direction actually changes, not on every touchmove —
+						// this list can be large (every drawing on /drawings),
+						// and re-querying it on every pixel of finger movement
+						// was a real source of stutter during a drag.
+						const triggers = getVisibleTriggers();
+						if (triggers.length > 1) {
+							dragDirection = dir;
+							const nextIndex = wrap(currentIndex + dir, triggers.length);
+							const incoming = frames[1 - activeIndex];
+							incoming.el.style.visibility = 'visible';
+							loadInto(incoming, triggers[nextIndex]);
+						}
+					}
+					if (dragDirection) {
+						setFrameX(frames[1 - activeIndex].el, drag.dx + dragDirection * slideDistance());
+					}
 				} else if (drag.axis === 'y' && drag.dy > 0) {
 					stage.style.transform = `translateY(${drag.dy}px)`;
 					stage.style.opacity = String(Math.max(1 - drag.dy / 400, 0.3));
@@ -423,16 +547,25 @@ import Icon from './icons/Icon.astro';
 		stage.addEventListener('touchend', () => {
 			if (!drag) return;
 			const { dx, dy, axis } = drag;
+			const direction = dragDirection;
 			drag = null;
 
 			if (axis === 'x') {
-				if (Math.abs(dx) > SWIPE_THRESHOLD) {
-					beginSlide(dx < 0 ? 1 : -1);
+				if (direction && Math.abs(dx) > SWIPE_THRESHOLD) {
+					slideTo(direction, dx, true).then(() => {
+						dragDirection = null;
+					});
+				} else if (direction) {
+					// Didn't clear the threshold — both frames spring back to
+					// rest rather than committing to a navigation.
+					springBack(direction, dx).then(() => {
+						dragDirection = null;
+					});
 				} else {
-					// Didn't clear the threshold — spring back to rest rather
-					// than committing to a navigation.
+					// Never resolved a direction (negligible horizontal
+					// movement) — just the active frame to settle.
 					isAnimating = true;
-					animateFrameX(currentX, 0).then(() => {
+					animateFrameX(frames[activeIndex].el, dx, 0).then(() => {
 						isAnimating = false;
 					});
 				}
@@ -472,7 +605,7 @@ import Icon from './icons/Icon.astro';
 		position: absolute;
 		inset: 0;
 		background: black;
-		opacity: 0.8;
+		opacity: 0.75;
 	}
 
 	.lightbox-btn {
@@ -529,9 +662,6 @@ import Icon from './icons/Icon.astro';
 		z-index: 1;
 		flex: 1;
 		min-height: 0;
-		display: flex;
-		align-items: center;
-		justify-content: center;
 		overflow: hidden;
 		padding: var(--space-4) var(--space-5);
 		touch-action: pinch-zoom;
@@ -553,14 +683,31 @@ import Icon from './icons/Icon.astro';
 	/* A plain div has no intrinsic size, so its explicit pixel size (set in
 	   JS from the drawing's known aspect ratio) fully determines this box —
 	   unlike the img inside it, its size never changes as a lower- or
-	   higher-res image loads into that img. The slide itself runs entirely
-	   through the Web Animations API (see animateFrameX in the script), not
-	   a CSS transition, so there's no transition-class/timing property here —
-	   live touch-drag sets the transform directly with no animation at all,
-	   tracking the finger 1:1. */
+	   higher-res image loads into that img. Positioned (not flex-centered),
+	   because two of these exist at once during a navigation — the active
+	   drawing and the one sliding in beside it — each sized to its own
+	   drawing's aspect ratio; `translate(-50%, -50%)` centers each in the
+	   stage regardless of its own size, and the same transform's `translateX`
+	   term is what the slide (and live touch-drag) moves. The slide itself
+	   runs entirely through the Web Animations API (see animateFrameX in the
+	   script), not a CSS transition, so there's no transition-class/timing
+	   property here — live touch-drag sets the transform directly with no
+	   animation at all, tracking the finger 1:1. */
 	.lightbox-frame {
+		position: absolute;
+		top: 50%;
+		left: 50%;
 		max-width: 100%;
 		max-height: 100%;
+		/* Only ever two of these, both live for as long as the lightbox is
+		   open, so promoting them to their own compositor layer up front is
+		   cheap — it avoids the browser doing that promotion right as a
+		   slide starts, which is a common cause of a dropped first frame. */
+		will-change: transform;
+	}
+
+	.lightbox-frame:nth-of-type(2) {
+		visibility: hidden;
 	}
 
 	.lightbox-image {

@@ -20,9 +20,16 @@ const src = urlFor(drawing.image).width(1200).auto('format').url();
 const fullSrc = urlFor(drawing.image).width(2000).auto('format').url();
 const alt = drawing.alt || drawing.caption;
 
+// A height-capped image (the project hero) has to give up the component's
+// usual `width: 100%` — otherwise the box keeps the container's full width
+// even once its height is clamped, so it stops matching the image's own
+// aspect ratio and the leftover space shows through as flat background
+// color on either side. Letting width track the aspect ratio instead means
+// the box always hugs the image exactly, capped growth in either dimension.
 const style = [
 	crop ? undefined : `aspect-ratio: ${drawing.image.aspectRatio}`,
 	maxHeight ? `max-height: ${maxHeight}` : undefined,
+	maxHeight ? 'width: auto; max-width: 100%' : undefined,
 ]
 	.filter(Boolean)
 	.join('; ');

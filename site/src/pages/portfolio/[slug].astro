@@ -163,7 +163,13 @@ function sizesAttrFor(size: string | undefined) {
 	.hero-thumb {
 		display: flex;
 		flex-direction: column;
-		align-items: center;
+		/* Shrink-wraps to the image's own rendered width (which the
+		   height-capped image now determines itself, see DrawingImage.astro)
+		   rather than stretching full-width, and align-self keeps it pinned
+		   left instead of being centered by .project-page's flex layout. */
+		width: fit-content;
+		max-width: 100%;
+		align-self: flex-start;
 	}
 
 	.eyebrow {
