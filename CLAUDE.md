@@ -380,5 +380,26 @@ and the project page — every drawing is clickable except the Portfolio
 index's small representative thumbnail, which stays a plain link to the
 project.
 
-Still to do: deploy the Studio (`npm run deploy` from `studio/`) to
-studio.cillianloftus.com; `/private/[slug]`.
+The Studio deploys the same way the main site does — Cloudflare Workers
+static assets, not Sanity's own hosted `sanity deploy` (which would land on
+a `*.sanity.studio` URL instead, not a subdomain of the actual domain).
+`studio/wrangler.jsonc` mirrors `site/wrangler.jsonc`'s shape (different
+`name`: `cillianloftus-studio`) with one difference —
+`not_found_handling: "single-page-application"` instead of `"404-page"`,
+since the Studio is a client-side-routed SPA and unknown paths need to
+fall back to `index.html`, not a real 404. Deploy is `npm run build && npx
+wrangler deploy` from `studio/`, same two-step as the main site. Currently
+live at `cillianloftus-studio.cillianloftus.workers.dev`; routing
+`studio.cillianloftus.com` to it still needs a custom domain added in the
+Cloudflare dashboard (not something doable from the CLI/repo alone).
+
+Still to do: the custom domain step above for the Studio; `/private/[slug]`
+(deliberately backburnered — see [[project_cillianloftus_site_status]], no
+private content exists yet).
+
+**Gotcha, confirmed the hard way:** Sanity content going live requires both
+publishing in the Studio *and* a manual rebuild+redeploy of the main site
+(`npm run build && npx wrangler deploy` from `site/`) — publishing alone
+does not touch the live site. cillianloftus.com was found serving a build
+with zero projects/drawings baked in (the deployed `dist` predated the
+current Sanity content) until this was caught and redeployed.
