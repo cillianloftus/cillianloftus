@@ -17,7 +17,12 @@ const srcset = widths
 	.map((width) => `${urlFor(drawing.image).width(width).auto('format').url()} ${width}w`)
 	.join(', ');
 const src = urlFor(drawing.image).width(1200).auto('format').url();
-const fullSrc = urlFor(drawing.image).width(2000).auto('format').url();
+// Wider than the grid srcset's max on purpose: this is what the lightbox
+// opens at full-viewport size, and its 2.2x desktop zoom (Lightbox.astro's
+// DESKTOP_ZOOM_SCALE) stacks with the display's own device pixel ratio —
+// a 2000px source was visibly softer than the ~5000px source PNGs
+// (scripts/pdf_to_png.py) actually support once either of those kicked in.
+const fullSrc = urlFor(drawing.image).width(3600).auto('format').url();
 const alt = drawing.alt || drawing.caption;
 
 // A height-capped image (the project hero) has to give up the component's

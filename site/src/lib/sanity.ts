@@ -9,6 +9,18 @@ const dataset = import.meta.env.SANITY_DATASET || 'production';
 
 export const sanityConfigured = Boolean(projectId);
 
+// Every page silently falls back to empty content when Sanity isn't
+// configured (see the `sanityConfigured ? ... : []` pattern throughout
+// src/pages), deliberately, so `astro dev` works on a fresh checkout with
+// no .env. That same leniency is dangerous for a production build: it
+// means a missing/broken SANITY_PROJECT_ID ships an empty site with no
+// error at all, rather than failing the build. Fail loudly instead.
+if (import.meta.env.PROD && !sanityConfigured) {
+	throw new Error(
+		'SANITY_PROJECT_ID is not set for a production build. Building without it would silently ship an empty site (no projects, drawings, or writing) — set SANITY_PROJECT_ID (and optionally SANITY_DATASET) in site/.env before running `npm run build`.',
+	);
+}
+
 let client: SanityClient | undefined;
 let builder: ImageUrlBuilder | undefined;
 
