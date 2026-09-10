@@ -1,19 +1,33 @@
 ---
 import Base from '../layouts/Base.astro';
-import DrawingPlaceholder from '../components/DrawingPlaceholder.astro';
-import { projects } from '../lib/placeholder-data';
+import DrawingImage from '../components/DrawingImage.astro';
+import Lightbox from '../components/Lightbox.astro';
+import { getDrawings, getProjects, sanityConfigured } from '../lib/sanity';
 import { PROJECTIONS, MEDIUMS } from '../lib/types';
 
-const allDrawings = projects
-	.filter((project) => !project.private)
-	.flatMap((project) =>
-		project.drawings.map((drawing) => ({
-			...drawing,
-			year: project.year,
-			projectSlug: project.slug,
-			projectTitle: project.title,
-		})),
-	);
+const projects = sanityConfigured ? await getProjects() : [];
+const standaloneDrawings = sanityConfigured ? await getDrawings() : [];
+
+const projectDrawings = projects.flatMap((project) =>
+	(project.drawings ?? []).map((drawing) => ({
+		...drawing,
+		year: project.year || (project.date ? new Date(project.date).getFullYear().toString() : 'Undated'),
+		date: project.date,
+		projectSlug: project.slug,
+		projectTitle: project.title,
+	})),
+);
+
+const looseDrawings = standaloneDrawings.map((drawing) => ({
+	...drawing,
+	year: new Date(drawing.date).getFullYear().toString(),
+	projectSlug: undefined,
+	projectTitle: undefined,
+}));
+
+const allDrawings = [...projectDrawings, ...looseDrawings].sort((a, b) =>
+	(b.date ?? '0000-00-00').localeCompare(a.date ?? '0000-00-00'),
+);
 
 const YEARS = Array.from(new Set(allDrawings.map((d) => d.year)))
 	.sort((a, b) => b.localeCompare(a))
@@ -23,9 +37,15 @@ const projectionCounts = Object.fromEntries(
 	PROJECTIONS.map((p) => [p.value, allDrawings.filter((d) => d.projection.includes(p.value)).length]),
 );
 const mediumCounts = Object.fromEntries(
-	MEDIUMS.map((m) => [m.value, allDrawings.filter((d) => d.medium.includes(m.value)).length]),
+	MEDIUMS.map((m) => [m.value, allDrawings.filter((d) => d.medium?.includes(m.value)).length]),
 );
 const yearCounts = Object.fromEntries(YEARS.map((y) => [y.value, allDrawings.filter((d) => d.year === y.value).length]));
+
+function sizesAttrFor(size: string | undefined) {
+	if (size === 'full') return '100vw';
+	if (size === 'large') return '(min-width: 900px) 66vw, 100vw';
+	return '(min-width: 900px) 33vw, (min-width: 600px) 50vw, 100vw';
+}
 ---
 
 <Base
@@ -73,20 +93,28 @@ const yearCounts = Object.fromEntries(YEARS.map((y) => [y.value, allDrawings.fil
 				allDrawings.map((drawing) => (
 					<li
 						class="drawing-item"
-						class:list={{ 'full-width': drawing.fullWidth }}
 						data-projection={drawing.projection.join(' ')}
-						data-medium={drawing.medium.join(' ')}
+						data-medium={(drawing.medium ?? []).join(' ')}
 						data-year={drawing.year}
+						data-size={drawing.size || 'normal'}
 					>
-						<DrawingPlaceholder drawing={drawing} />
+						<DrawingImage drawing={drawing} sizes={sizesAttrFor(drawing.size)} lightbox />
 						<p class="caption">
-							{drawing.caption} &middot; <a href={`/portfolio/${drawing.projectSlug}`}>{drawing.projectTitle}</a>
+							{drawing.caption}
+							{drawing.projectSlug && (
+								<>
+									{' '}
+									&middot; <a href={`/portfolio/${drawing.projectSlug}`}>{drawing.projectTitle}</a>
+								</>
+							)}
 						</p>
 					</li>
 				))
 			}
 		</ul>
 	</section>
+
+	<Lightbox />
 </Base>
 
 <script is:inline>
@@ -96,6 +124,83 @@ const yearCounts = Object.fromEntries(YEARS.map((y) => [y.value, allDrawings.fil
 
 		var pillButtons = Array.prototype.slice.call(root.querySelectorAll('.filter-pill'));
 		var items = Array.prototype.slice.call(root.querySelectorAll('.drawing-item'));
+		var list = root.querySelector('.drawing-list');
+		var GAP = 24;
+
+		// Column-balanced layout, walking items in the exact order they're in on the
+		// page (which mirrors their order in Studio). Each item goes into whichever
+		// column (or, for a 'large'/'full' spanning item, run of columns) is
+		// currently shortest, so the container's total height stays minimal rather
+		// than one column running long while another sits short.
+		function columnsFor(width) {
+			if (width >= 900) return 3;
+			if (width >= 600) return 2;
+			return 1;
+		}
+
+		function layoutMasonry() {
+			var visible = items.filter((item) => !item.classList.contains('is-hidden'));
+			var containerWidth = list.clientWidth;
+			var columns = columnsFor(containerWidth);
+
+			if (columns <= 1) {
+				list.style.height = '';
+				visible.forEach((item) => {
+					item.style.position = '';
+					item.style.width = '';
+					item.style.left = '';
+					item.style.top = '';
+					item.style.marginBottom = '';
+				});
+				list.classList.remove('masonry-active');
+				return;
+			}
+
+			list.classList.add('masonry-active');
+			var colWidth = (containerWidth - GAP * (columns - 1)) / columns;
+			var colHeights = new Array(columns).fill(0);
+
+			function shortestStart(span) {
+				var bestStart = 0;
+				var bestHeight = Infinity;
+				for (var start = 0; start <= columns - span; start++) {
+					var windowHeight = Math.max.apply(null, colHeights.slice(start, start + span));
+					if (windowHeight < bestHeight) {
+						bestHeight = windowHeight;
+						bestStart = start;
+					}
+				}
+				return bestStart;
+			}
+
+			// 'full' always spans every column currently on screen, not a fixed
+			// number, so it stays full-width whether that's 3 columns or 1.
+			function spanFor(size) {
+				if (size === 'full') return columns;
+				if (size === 'large') return Math.min(2, columns);
+				return 1;
+			}
+
+			visible.forEach((item) => {
+				var span = spanFor(item.dataset.size);
+				var startCol = shortestStart(span);
+				var width = colWidth * span + GAP * (span - 1);
+
+				item.style.marginBottom = '0';
+				item.style.position = 'absolute';
+				item.style.width = width + 'px';
+				item.style.left = startCol * (colWidth + GAP) + 'px';
+
+				var top = Math.max.apply(null, colHeights.slice(startCol, startCol + span));
+				item.style.top = top + 'px';
+
+				var height = item.offsetHeight;
+				var newBottom = top + height + GAP;
+				for (var i = startCol; i < startCol + span; i++) colHeights[i] = newBottom;
+			});
+
+			list.style.height = Math.max.apply(null, colHeights) - GAP + 'px';
+		}
 
 		// Combinator for values selected within the same axis: 'and' means a drawing must
 		// match every selected pill (e.g. Plan + Axonometric shows only drawings tagged both),
@@ -192,6 +297,8 @@ const yearCounts = Object.fromEntries(YEARS.map((y) => [y.value, allDrawings.fil
 			items.forEach((item) => {
 				item.classList.toggle('is-hidden', !matches(item, state));
 			});
+
+			layoutMasonry();
 		}
 
 		pillButtons.forEach((btn) => {
@@ -210,6 +317,12 @@ const yearCounts = Object.fromEntries(YEARS.map((y) => [y.value, allDrawings.fil
 		});
 
 		window.addEventListener('popstate', render);
+
+		var resizeTimer;
+		window.addEventListener('resize', () => {
+			clearTimeout(resizeTimer);
+			resizeTimer = setTimeout(layoutMasonry, 150);
+		});
 
 		render();
 	}
@@ -306,19 +419,14 @@ const yearCounts = Object.fromEntries(YEARS.map((y) => [y.value, allDrawings.fil
 	}
 
 	.drawing-list {
-		display: grid;
-		grid-template-columns: 1fr;
+		position: relative;
+		display: flex;
+		flex-direction: column;
 		gap: var(--space-4);
 	}
 
-	@media (min-width: 700px) {
-		.drawing-list {
-			grid-template-columns: repeat(2, 1fr);
-		}
-
-		.drawing-list li.full-width {
-			grid-column: 1 / -1;
-		}
+	.drawing-list.masonry-active {
+		display: block;
 	}
 
 	.drawing-item.is-hidden {

@@ -1,6 +1,7 @@
 ---
 import { ClientRouter } from 'astro:transitions';
 import Icon, { type IconName } from '../components/icons/Icon.astro';
+import { getSiteSettings, sanityConfigured } from '../lib/sanity';
 import '@fontsource/ibm-plex-sans/300.css';
 import '@fontsource/ibm-plex-sans/400.css';
 import '@fontsource/ibm-plex-sans/500.css';
@@ -29,7 +30,7 @@ const navLinks = [
 	current: pathname === link.href || pathname.startsWith(`${link.href}/`),
 }));
 
-const socialLinks: { name: string; href: string; icon: IconName }[] = [
+const fallbackSocialLinks: { name: string; href: string; icon: IconName }[] = [
 	{ name: 'LinkedIn', href: 'https://www.linkedin.com/in/cillianloftus', icon: 'linkedin' },
 	{ name: 'Email', href: 'mailto:cillianloftus@gmail.com', icon: 'email' },
 	{ name: 'GitHub', href: 'https://github.com/cillianloftus', icon: 'github' },
@@ -41,6 +42,15 @@ const socialLinks: { name: string; href: string; icon: IconName }[] = [
 		icon: 'spotify',
 	},
 ];
+const fallbackLocation = 'Castlebar, Co. Mayo';
+
+const siteSettings = sanityConfigured ? await getSiteSettings() : null;
+
+const socialLinks: { name: string; href: string; icon: IconName }[] = siteSettings?.socialLinks?.length
+	? siteSettings.socialLinks.map((link) => ({ name: link.name, href: link.url, icon: link.icon as IconName }))
+	: fallbackSocialLinks;
+
+const location = siteSettings?.location || fallbackLocation;
 ---
 
 <html lang="en">
@@ -120,7 +130,7 @@ const socialLinks: { name: string; href: string; icon: IconName }[] = [
 					<p class="footer-copyright">&copy; {new Date().getFullYear()} Cillian Loftus</p>
 					<p class="footer-location">
 						<Icon name="location" size={14} />
-						Castlebar, Co. Mayo
+						{location}
 					</p>
 				</div>
 				<div class="footer-meta">

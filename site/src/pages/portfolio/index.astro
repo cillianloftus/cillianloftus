@@ -1,9 +1,9 @@
 ---
 import Base from '../../layouts/Base.astro';
-import DrawingPlaceholder from '../../components/DrawingPlaceholder.astro';
-import { projects } from '../../lib/placeholder-data';
+import DrawingImage from '../../components/DrawingImage.astro';
+import { getProjects, sanityConfigured } from '../../lib/sanity';
 
-const publicProjects = projects.filter((project) => !project.private);
+const projects = sanityConfigured ? await getProjects() : [];
 ---
 
 <Base title="Portfolio · Cillian Loftus" description="Studio work on the adaptive reuse of existing buildings across Limerick City.">
@@ -15,18 +15,19 @@ const publicProjects = projects.filter((project) => !project.private);
 
 		<ul class="project-grid">
 			{
-				publicProjects.map((project) => (
+				projects.map((project) => (
 					<li>
 						<a class="project-card" href={`/portfolio/${project.slug}`}>
-							<div class="project-thumb" transition:name={`project-image-${project.slug}`}>
-								<DrawingPlaceholder drawing={project.drawings[0]} />
-							</div>
+							{project.drawings?.[0] && (
+								<div class="project-thumb" transition:name={`project-image-${project.slug}`}>
+									<DrawingImage drawing={project.drawings[0]} sizes="(min-width: 700px) 50vw, 100vw" />
+								</div>
+							)}
 							<div class="project-copy">
 								<h2>{project.title}</h2>
 								<p class="project-meta">
 									{project.type} &middot; {project.year} &middot; {project.location}
 								</p>
-								<p class="project-description">{project.description}</p>
 							</div>
 						</a>
 					</li>
@@ -108,8 +109,4 @@ const publicProjects = projects.filter((project) => !project.private);
 		margin-bottom: 0.5em;
 	}
 
-	.project-description {
-		font-size: var(--step--1);
-		color: var(--color-text-muted);
-	}
 </style>

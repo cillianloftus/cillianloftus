@@ -24,6 +24,14 @@ export default defineType({
 			type: 'string',
 		}),
 		defineField({
+			name: 'date',
+			title: 'Date',
+			description:
+				'Used to sort drawings and projects chronologically, newest first. The exact day rarely matters — pick any day in the right month.',
+			type: 'date',
+			validation: (Rule) => Rule.required(),
+		}),
+		defineField({
 			name: 'location',
 			title: 'Location',
 			type: 'string',
@@ -51,7 +59,7 @@ export default defineType({
 			title: 'Drawings',
 			description: 'The first drawing is used as the project thumbnail and Open Graph image.',
 			type: 'array',
-			of: [{ type: 'drawing' }],
+			of: [{ type: 'projectDrawing' }],
 		}),
 		defineField({
 			name: 'private',

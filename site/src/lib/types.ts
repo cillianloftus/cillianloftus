@@ -1,3 +1,6 @@
+import type { PortableTextBlock } from '@portabletext/types';
+import type { SanityImageSource } from '@sanity/image-url';
+
 export type Projection = 'plan' | 'section' | 'elevation' | 'axonometric' | 'perspective' | 'detail';
 
 export type Medium = 'sketch' | 'hand-drawing' | 'cad' | 'render' | 'model-photo' | 'collage';
@@ -20,26 +23,47 @@ export const MEDIUMS: { value: Medium; label: string }[] = [
 	{ value: 'collage', label: 'Collage' },
 ];
 
+export type DrawingImage = SanityImageSource & { aspectRatio: number };
+
+export type DrawingSize = 'normal' | 'large' | 'full';
+
 export interface Drawing {
-	slug: string;
+	image: DrawingImage;
 	caption: string;
 	alt?: string;
 	projection: Projection[];
 	medium: Medium[];
-	fullWidth?: boolean;
+	size?: DrawingSize;
+}
+
+export interface StandaloneDrawing extends Drawing {
+	date: string;
 }
 
 export interface Project {
 	slug: string;
 	title: string;
-	year: string;
-	location: string;
-	type: string;
-	description: string;
+	year?: string;
+	date?: string;
+	location?: string;
+	type?: string;
 	role?: string;
+	description?: PortableTextBlock[];
 	drawings: Drawing[];
-	private?: boolean;
 	featured?: boolean;
+}
+
+export interface SocialLink {
+	name: string;
+	url: string;
+	icon: string;
+}
+
+export interface SiteSettings {
+	location?: string;
+	email?: string;
+	cvFile?: string;
+	socialLinks?: SocialLink[];
 }
 
 export type WritingCategory = 'article' | 'poetry' | 'dissertation';
@@ -49,8 +73,7 @@ export interface WritingEntry {
 	title: string;
 	date: string;
 	category: WritingCategory;
-	summary: string;
-	body: string;
+	summary?: string;
+	body?: PortableTextBlock[];
 	pdf?: string;
-	draft?: boolean;
 }

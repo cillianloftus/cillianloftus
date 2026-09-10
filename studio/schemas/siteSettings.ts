@@ -1,4 +1,4 @@
-import { defineField, defineType } from 'sanity';
+﻿import { defineField, defineType } from 'sanity';
 
 export default defineType({
 	name: 'siteSettings',
@@ -23,12 +23,12 @@ export default defineType({
 		}),
 		defineField({
 			name: 'cvFile',
-			title: 'CV file',
+			title: 'CV File',
 			type: 'file',
 		}),
 		defineField({
 			name: 'socialLinks',
-			title: 'Social links',
+			title: 'Social Links',
 			type: 'array',
 			of: [
 				{
@@ -45,14 +45,22 @@ export default defineType({
 							name: 'url',
 							title: 'URL',
 							type: 'url',
-							validation: (Rule) => Rule.required(),
+							description: 'For the Email icon, use a mailto: link, e.g. mailto:you@example.com',
+							validation: (Rule) => Rule.required().uri({ scheme: ['http', 'https', 'mailto'] }),
 						}),
 						defineField({
 							name: 'icon',
 							title: 'Icon',
 							type: 'string',
 							options: {
-								list: ['linkedin', 'github', 'instagram', 'pinterest', 'spotify', 'email'],
+								list: [
+									{ title: 'LinkedIn', value: 'linkedin' },
+									{ title: 'GitHub', value: 'github' },
+									{ title: 'Instagram', value: 'instagram' },
+									{ title: 'Pinterest', value: 'pinterest' },
+									{ title: 'Spotify', value: 'spotify' },
+									{ title: 'Email', value: 'email' },
+								],
 							},
 							validation: (Rule) => Rule.required(),
 						}),

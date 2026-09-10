@@ -1,6 +1,6 @@
 ---
 import Base from '../../layouts/Base.astro';
-import { writing } from '../../lib/placeholder-data';
+import { getWritingEntries, portableTextToHtml, sanityConfigured } from '../../lib/sanity';
 
 const categoryLabels = {
 	article: 'Article',
@@ -8,16 +8,16 @@ const categoryLabels = {
 	dissertation: 'Dissertation',
 };
 
-export function getStaticPaths() {
-	return writing
-		.filter((entry) => !entry.draft)
-		.map((entry) => ({
-			params: { slug: entry.slug },
-			props: { entry },
-		}));
+export async function getStaticPaths() {
+	const entries = sanityConfigured ? await getWritingEntries() : [];
+	return entries.map((entry) => ({
+		params: { slug: entry.slug },
+		props: { entry },
+	}));
 }
 
 const { entry } = Astro.props;
+const bodyHtml = portableTextToHtml(entry.body);
 ---
 
 <Base title={`${entry.title} · Cillian Loftus`} description={entry.summary}>
@@ -34,9 +34,7 @@ const { entry } = Astro.props;
 			</p>
 		</header>
 
-		<div class="entry-body">
-			<p>{entry.body}</p>
-		</div>
+		<div class="entry-body" set:html={bodyHtml} />
 
 		{
 			entry.pdf && (

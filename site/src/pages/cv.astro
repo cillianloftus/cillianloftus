@@ -1,8 +1,17 @@
 ---
 import Base from '../layouts/Base.astro';
 import Icon from '../components/icons/Icon.astro';
+import { getSiteSettings, sanityConfigured } from '../lib/sanity';
 
-const cvHref = '/cillian-loftus-cv.pdf';
+const fallbackLocation = 'Castlebar, Co. Mayo';
+const fallbackEmail = 'cillianloftus@gmail.com';
+const fallbackCvHref = '/cillian-loftus-cv.pdf';
+
+const siteSettings = sanityConfigured ? await getSiteSettings() : null;
+
+const location = siteSettings?.location || fallbackLocation;
+const email = siteSettings?.email || fallbackEmail;
+const cvHref = siteSettings?.cvFile || fallbackCvHref;
 
 const about =
 	'Architecture student at the University of Limerick, having completed third year and seeking a work placement for professional experience before fourth year. Award-winning writer and researcher on AI infrastructure, with three years of studio work adapting existing buildings across Limerick City. Brings an analytical foundation from prior mathematics study, alongside strong design software skills and hands-on model-making experience.';
@@ -122,11 +131,11 @@ const languages = [
 				<ul class="cv-contact">
 					<li>
 						<Icon name="location" size={14} />
-						Castlebar, Co. Mayo
+						{location}
 					</li>
 					<li>
 						<Icon name="email" size={14} />
-						<a href="mailto:cillianloftus@gmail.com">cillianloftus@gmail.com</a>
+						<a href={`mailto:${email}`}>{email}</a>
 					</li>
 				</ul>
 			</div>

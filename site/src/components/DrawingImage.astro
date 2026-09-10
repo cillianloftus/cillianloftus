@@ -1,0 +1,92 @@
+---
+import { urlFor } from '../lib/sanity';
+import type { Drawing } from '../lib/types';
+
+interface Props {
+	drawing: Drawing;
+	sizes: string;
+	crop?: boolean;
+	maxHeight?: string;
+	lightbox?: boolean;
+}
+
+const { drawing, sizes, crop = false, maxHeight, lightbox = false } = Astro.props;
+
+const widths = [480, 800, 1200, 1600, 2000];
+const srcset = widths
+	.map((width) => `${urlFor(drawing.image).width(width).auto('format').url()} ${width}w`)
+	.join(', ');
+const src = urlFor(drawing.image).width(1200).auto('format').url();
+const fullSrc = urlFor(drawing.image).width(2000).auto('format').url();
+const alt = drawing.alt || drawing.caption;
+
+const style = [
+	crop ? undefined : `aspect-ratio: ${drawing.image.aspectRatio}`,
+	maxHeight ? `max-height: ${maxHeight}` : undefined,
+]
+	.filter(Boolean)
+	.join('; ');
+
+const Tag = lightbox ? 'button' : 'div';
+---
+
+<Tag
+	class="drawing-image"
+	class:list={{ cropped: crop }}
+	style={style || undefined}
+	type={lightbox ? 'button' : undefined}
+	data-lightbox={lightbox ? '' : undefined}
+	data-full-src={lightbox ? fullSrc : undefined}
+	data-caption={lightbox ? drawing.caption : undefined}
+	data-alt={lightbox ? alt : undefined}
+	data-aspect-ratio={lightbox ? drawing.image.aspectRatio : undefined}
+	aria-label={lightbox ? `Open full view: ${drawing.caption}` : undefined}
+>
+	<img src={src} srcset={srcset} sizes={sizes} alt={alt} loading="lazy" decoding="async" />
+</Tag>
+
+<style>
+	.drawing-image {
+		display: block;
+		width: 100%;
+		overflow: hidden;
+		background: var(--color-surface);
+		border: 1px solid var(--color-border);
+		padding: 0;
+		transition: border-color 0.15s ease;
+	}
+
+	button.drawing-image {
+		cursor: pointer;
+	}
+
+	button.drawing-image:hover,
+	button.drawing-image:focus-visible {
+		border-color: var(--color-accent);
+	}
+
+	.drawing-image img {
+		display: block;
+		width: 100%;
+		height: 100%;
+		object-fit: contain;
+		transition: transform 0.25s ease;
+	}
+
+	button.drawing-image:hover img,
+	button.drawing-image:focus-visible img {
+		transform: scale(1.03);
+	}
+
+	/* Uniform-crop mode, for representative thumbnails (the portfolio index
+	   card) where a consistent grid shape matters more than showing the
+	   whole sheet. Everywhere else, the box is sized to the image's own
+	   aspect ratio instead, so nothing is cropped. */
+	.drawing-image.cropped {
+		aspect-ratio: 4 / 3;
+	}
+
+	.drawing-image.cropped img {
+		object-fit: cover;
+	}
+</style>

@@ -1,6 +1,6 @@
 ---
 import Base from '../../layouts/Base.astro';
-import { writing } from '../../lib/placeholder-data';
+import { getWritingEntries, sanityConfigured } from '../../lib/sanity';
 
 const categoryLabels = {
 	article: 'Article',
@@ -8,13 +8,11 @@ const categoryLabels = {
 	dissertation: 'Dissertation',
 };
 
-const entries = writing
-	.filter((entry) => !entry.draft)
-	.sort((a, b) => b.date.localeCompare(a.date))
-	.map((entry) => ({
-		...entry,
-		href: `/writing/${entry.slug}`,
-	}));
+const writingEntries = sanityConfigured ? await getWritingEntries() : [];
+const entries = writingEntries.map((entry) => ({
+	...entry,
+	href: `/writing/${entry.slug}`,
+}));
 ---
 
 <Base title="Writing · Cillian Loftus" description="Essays and poetry, including an award-winning dissertation on AI infrastructure in Ireland.">

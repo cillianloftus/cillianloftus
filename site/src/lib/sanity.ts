@@ -2,6 +2,7 @@ import { createClient, type SanityClient } from '@sanity/client';
 import { createImageUrlBuilder, type ImageUrlBuilder, type SanityImageSource } from '@sanity/image-url';
 import { toHTML } from '@portabletext/to-html';
 import type { PortableTextBlock } from '@portabletext/types';
+import type { Project, SiteSettings, StandaloneDrawing, WritingEntry } from './types';
 
 const projectId = import.meta.env.SANITY_PROJECT_ID;
 const dataset = import.meta.env.SANITY_DATASET || 'production';
@@ -16,7 +17,7 @@ if (projectId) {
 		projectId,
 		dataset,
 		apiVersion: '2026-01-01',
-		useCdn: true,
+		useCdn: import.meta.env.PROD,
 	});
 	builder = createImageUrlBuilder(client);
 }
@@ -44,43 +45,50 @@ export function portableTextToHtml(blocks: PortableTextBlock[] | undefined): str
 	return toHTML(blocks);
 }
 
+const drawingImageField = /* groq */ `
+	image{
+		...,
+		"aspectRatio": asset->metadata.dimensions.aspectRatio,
+	}
+`;
+
 const projectFields = /* groq */ `
 	"slug": slug.current,
 	title,
 	year,
+	date,
 	location,
 	type,
 	role,
 	description,
 	featured,
 	drawings[]{
-		"slug": _key,
-		image,
+		${drawingImageField},
 		caption,
 		alt,
 		projection,
 		medium,
-		fullWidth,
+		size,
 	}
 `;
 
-export async function getProjects() {
+export async function getProjects(): Promise<Project[]> {
 	return getClient().fetch(/* groq */ `
-		*[_type == "project" && private != true] | order(_createdAt asc) {
+		*[_type == "project" && private != true] | order(date desc) {
 			${projectFields}
 		}
 	`);
 }
 
-export async function getFeaturedProjects() {
+export async function getFeaturedProjects(): Promise<Project[]> {
 	return getClient().fetch(/* groq */ `
-		*[_type == "project" && private != true && featured == true] | order(_createdAt asc) {
+		*[_type == "project" && private != true && featured == true] | order(date desc) {
 			${projectFields}
 		}
 	`);
 }
 
-export async function getProject(slug: string) {
+export async function getProject(slug: string): Promise<Project | null> {
 	return getClient().fetch(
 		/* groq */ `
 			*[_type == "project" && slug.current == $slug && private != true][0] {
@@ -89,6 +97,20 @@ export async function getProject(slug: string) {
 		`,
 		{ slug },
 	);
+}
+
+export async function getDrawings(): Promise<StandaloneDrawing[]> {
+	return getClient().fetch(/* groq */ `
+		*[_type == "drawing"] {
+			${drawingImageField},
+			caption,
+			alt,
+			date,
+			projection,
+			medium,
+			fullWidth,
+		}
+	`);
 }
 
 const writingFields = /* groq */ `
@@ -101,7 +123,7 @@ const writingFields = /* groq */ `
 	"pdf": pdf.asset->url,
 `;
 
-export async function getWritingEntries() {
+export async function getWritingEntries(): Promise<WritingEntry[]> {
 	return getClient().fetch(/* groq */ `
 		*[_type == "writing" && draft != true] | order(date desc) {
 			${writingFields}
@@ -109,7 +131,7 @@ export async function getWritingEntries() {
 	`);
 }
 
-export async function getWritingEntry(slug: string) {
+export async function getWritingEntry(slug: string): Promise<WritingEntry | null> {
 	return getClient().fetch(
 		/* groq */ `
 			*[_type == "writing" && slug.current == $slug && draft != true][0] {
@@ -120,7 +142,7 @@ export async function getWritingEntry(slug: string) {
 	);
 }
 
-export async function getSiteSettings() {
+export async function getSiteSettings(): Promise<SiteSettings | null> {
 	return getClient().fetch(/* groq */ `
 		*[_type == "siteSettings"][0] {
 			bio,

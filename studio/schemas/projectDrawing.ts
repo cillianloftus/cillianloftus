@@ -19,10 +19,9 @@ const MEDIUMS = [
 ];
 
 export default defineType({
-	name: 'drawing',
-	title: 'Drawing (standalone)',
-	type: 'document',
-	description: 'Not tied to any project. For project drawings, add them inside the project itself, in its Drawings field.',
+	name: 'projectDrawing',
+	title: 'Drawing',
+	type: 'object',
 	fields: [
 		defineField({
 			name: 'image',
@@ -42,14 +41,6 @@ export default defineType({
 			title: 'Alt text',
 			description: 'Accessible description for screen readers. Falls back to the caption if left blank.',
 			type: 'string',
-		}),
-		defineField({
-			name: 'date',
-			title: 'Date',
-			description:
-				'Project drawings inherit their date from the project; standalone drawings need their own. Used to sort the drawings index, newest first. The exact day rarely matters — pick any day in the right month.',
-			type: 'date',
-			validation: (Rule) => Rule.required(),
 		}),
 		defineField({
 			name: 'projection',
@@ -72,7 +63,7 @@ export default defineType({
 			name: 'size',
 			title: 'Size',
 			description:
-				'How many grid columns this drawing spans on the drawings index. Normal: 1. Large: 2. Full: however many columns the current screen shows (so it stays full-width at every breakpoint).',
+				'How many grid columns this drawing spans. Normal: 1. Large: 2. Full: however many columns the current screen shows (so it stays full-width at every breakpoint). Long sections and site plans usually want Large or Full; most drawings want Normal.',
 			type: 'string',
 			options: {
 				list: [
@@ -86,6 +77,6 @@ export default defineType({
 		}),
 	],
 	preview: {
-		select: { title: 'caption', subtitle: 'date', media: 'image' },
+		select: { title: 'caption', media: 'image' },
 	},
 });
