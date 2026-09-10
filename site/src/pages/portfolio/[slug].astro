@@ -2,7 +2,7 @@
 import Base from '../../layouts/Base.astro';
 import DrawingImage from '../../components/DrawingImage.astro';
 import Lightbox from '../../components/Lightbox.astro';
-import { getProjects, portableTextToHtml, sanityConfigured } from '../../lib/sanity';
+import { getProjects, portableTextToHtml, sanityConfigured, urlFor } from '../../lib/sanity';
 
 export async function getStaticPaths() {
 	const projects = sanityConfigured ? await getProjects() : [];
@@ -15,6 +15,9 @@ export async function getStaticPaths() {
 const { project } = Astro.props;
 const descriptionHtml = portableTextToHtml(project.description);
 const restDrawings = (project.drawings ?? []).slice(1);
+const ogImage = project.drawings?.[0]
+	? urlFor(project.drawings[0].image).width(1200).height(630).fit('crop').auto('format').url()
+	: undefined;
 
 function sizesAttrFor(size: string | undefined) {
 	if (size === 'full') return '100vw';
@@ -23,7 +26,7 @@ function sizesAttrFor(size: string | undefined) {
 }
 ---
 
-<Base title={`${project.title} · Cillian Loftus`} description={project.type}>
+<Base title={`${project.title} · Cillian Loftus`} description={project.type} ogImage={ogImage}>
 	<article class="project-page">
 		<header>
 			<p class="eyebrow">

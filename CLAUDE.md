@@ -277,7 +277,12 @@ password via a Pages Function. Never client-side password checks.
 - `prefers-reduced-motion` and dark mode respected via media queries and
   custom properties.
 - Print stylesheet for `/cv`.
-- Open Graph images generated per page at build time from the first drawing.
+- Open Graph images generated per page at build time from the first drawing
+  — currently wired for project pages only (`Base`'s `ogImage` prop, sized
+  1200×630 via Sanity's CDN). Other page types (home, `/drawings`, `/writing`
+  entries) don't have an equally unambiguous "first drawing" to draw from,
+  so they're still without one — a real decision needed before extending
+  this further, not an oversight.
 
 ## Deliberately ruled out
 
@@ -388,14 +393,36 @@ a `*.sanity.studio` URL instead, not a subdomain of the actual domain).
 `not_found_handling: "single-page-application"` instead of `"404-page"`,
 since the Studio is a client-side-routed SPA and unknown paths need to
 fall back to `index.html`, not a real 404. Deploy is `npm run build && npx
-wrangler deploy` from `studio/`, same two-step as the main site. Currently
-live at `cillianloftus-studio.cillianloftus.workers.dev`; routing
-`studio.cillianloftus.com` to it still needs a custom domain added in the
-Cloudflare dashboard (not something doable from the CLI/repo alone).
+wrangler deploy` from `studio/`, same two-step as the main site.
 
-Still to do: the custom domain step above for the Studio; `/private/[slug]`
-(deliberately backburnered — see [[project_cillianloftus_site_status]], no
-private content exists yet).
+Live and deployed at `studio.cillianloftus.com` (custom domain added via
+the Cloudflare dashboard's Workers & Pages → Domains & Routes → Add Custom
+Domain — the DNS record it creates is a `Worker`-type record, same pattern
+as the main site's own `cillianloftus.com` record, not a plain CNAME/A),
+and registered with the Sanity project (via the "Register Studio" prompt
+Sanity shows the first time you open a newly-deployed Studio URL — needed
+for schema-aware search, Content Agent, and anything else that reads the
+deployed schema). One gotcha hit while setting this up: right after adding
+the custom domain, it resolved correctly from public resolvers (1.1.1.1,
+8.8.8.8) but not from the browser — a home router had cached the
+"nonexistent domain" answer from before the DNS record existed; flushing
+local DNS (or just switching networks) cleared it. Not a Cloudflare
+problem, just local negative-DNS caching — worth remembering if a freshly
+added domain seems to work everywhere except one specific device/network.
+
+`/rss.xml` and an XML sitemap (`@astrojs/sitemap`) are both real now — the
+RSS `<link>` in every page's `<head>` used to point at a 404 (the file
+didn't exist despite being documented as a route and being the stated
+reason a newsletter was ruled out). `astro.config.mjs` now sets `site:
+'https://cillianloftus.com'`, which the sitemap integration needs for
+absolute URLs. `public/robots.txt` added, pointing at the sitemap. None of
+this excludes `/private/*` yet since that route doesn't exist — when it's
+built, the sitemap config needs a `filter` added so a password-protected
+page doesn't end up publicly listed regardless of the page itself being
+gated.
+
+Still to do: `/private/[slug]` (deliberately backburnered — no private
+content exists yet, see the project's own build-status notes for why).
 
 **Gotcha, confirmed the hard way:** Sanity content going live requires both
 publishing in the Studio *and* a manual rebuild+redeploy of the main site
