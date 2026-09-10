@@ -1,5 +1,19 @@
 import { defineField, defineType } from 'sanity';
 
+const PROJECT_TYPES = [
+	{ title: 'Adaptive Reuse', value: 'adaptive-reuse' },
+	{ title: 'Conservation', value: 'conservation' },
+	{ title: 'Healthcare', value: 'healthcare' },
+	{ title: 'Residential', value: 'residential' },
+	{ title: 'Public Space', value: 'public-space' },
+	{ title: 'Educational', value: 'educational' },
+	{ title: 'Culture', value: 'culture' },
+	{ title: 'Infrastructure', value: 'infrastructure' },
+	{ title: 'Commercial', value: 'commercial' },
+	{ title: 'Industrial', value: 'industrial' },
+	{ title: 'Mixed-Use', value: 'mixed-use' },
+];
+
 export default defineType({
 	name: 'project',
 	title: 'Project',
@@ -19,15 +33,10 @@ export default defineType({
 			validation: (Rule) => Rule.required(),
 		}),
 		defineField({
-			name: 'year',
-			title: 'Year',
-			type: 'string',
-		}),
-		defineField({
 			name: 'date',
 			title: 'Date',
 			description:
-				'Used to sort drawings and projects chronologically, newest first. The exact day rarely matters — pick any day in the right month.',
+				'Used to sort drawings and projects chronologically (newest first) and as the displayed year. The exact day rarely matters — pick any day in the right month.',
 			type: 'date',
 			validation: (Rule) => Rule.required(),
 		}),
@@ -39,8 +48,10 @@ export default defineType({
 		defineField({
 			name: 'type',
 			title: 'Type',
-			description: 'e.g. Housing, Public Space, Healthcare',
-			type: 'string',
+			description: 'Multi-select — a project can be more than one, e.g. both Housing and Public Space.',
+			type: 'array',
+			of: [{ type: 'string' }],
+			options: { list: PROJECT_TYPES },
 		}),
 		defineField({
 			name: 'role',
@@ -77,6 +88,12 @@ export default defineType({
 		}),
 	],
 	preview: {
-		select: { title: 'title', subtitle: 'type', media: 'drawings.0.image' },
+		select: { title: 'title', types: 'type', media: 'drawings.0.image' },
+		prepare({ title, types, media }) {
+			const labels = (types ?? []).map(
+				(value: string) => PROJECT_TYPES.find((t) => t.value === value)?.title ?? value,
+			);
+			return { title, subtitle: labels.join(', '), media };
+		},
 	},
 });

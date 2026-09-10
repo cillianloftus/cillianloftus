@@ -11,7 +11,7 @@ const standaloneDrawings = sanityConfigured ? await getDrawings() : [];
 const projectDrawings = projects.flatMap((project) =>
 	(project.drawings ?? []).map((drawing) => ({
 		...drawing,
-		year: project.year || (project.date ? new Date(project.date).getFullYear().toString() : 'Undated'),
+		year: project.date ? project.date.slice(0, 4) : 'Undated',
 		date: project.date,
 		projectSlug: project.slug,
 		projectTitle: project.title,
@@ -20,7 +20,7 @@ const projectDrawings = projects.flatMap((project) =>
 
 const looseDrawings = standaloneDrawings.map((drawing) => ({
 	...drawing,
-	year: new Date(drawing.date).getFullYear().toString(),
+	year: drawing.date.slice(0, 4),
 	projectSlug: undefined,
 	projectTitle: undefined,
 }));

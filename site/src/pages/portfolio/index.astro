@@ -2,6 +2,7 @@
 import Base from '../../layouts/Base.astro';
 import DrawingImage from '../../components/DrawingImage.astro';
 import { getProjects, sanityConfigured } from '../../lib/sanity';
+import { projectTypeLabels } from '../../lib/types';
 
 const projects = sanityConfigured ? await getProjects() : [];
 ---
@@ -26,7 +27,7 @@ const projects = sanityConfigured ? await getProjects() : [];
 							<div class="project-copy">
 								<h2>{project.title}</h2>
 								<p class="project-meta">
-									{project.type} &middot; {project.year} &middot; {project.location}
+									{projectTypeLabels(project.type)} &middot; {project.date?.slice(0, 4)} &middot; {project.location}
 								</p>
 							</div>
 						</a>

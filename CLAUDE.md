@@ -49,9 +49,15 @@ scripts/
 ## Content model
 
 ### `project`
-- title, year, location, type, role
-- **date** — required, used to sort drawings/projects chronologically.
-  Separate from `year` (a display label) since exact day doesn't matter.
+- title, location, role
+- **date** — required, used to sort drawings/projects chronologically, and
+  as the displayed year (`date.slice(0, 4)`) — no separate `year` field.
+  Exact day doesn't matter, only the month/year.
+- **type** — optional, multi-select: adaptive-reuse, conservation, healthcare,
+  residential, public-space, educational, culture, infrastructure,
+  commercial, industrial, mixed-use — ordered roughly most- to
+  least-distinctive to Cillian's own body of work, not alphabetically. A
+  project can be more than one, e.g. both residential and public space.
 - description (rich text)
 - drawings — array of `projectDrawing` objects
 - private (boolean) — routes to `/private/[slug]`, excluded from public lists

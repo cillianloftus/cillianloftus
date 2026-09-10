@@ -67,7 +67,6 @@ const drawingImageField = /* groq */ `
 const projectFields = /* groq */ `
 	"slug": slug.current,
 	title,
-	year,
 	date,
 	location,
 	type,
