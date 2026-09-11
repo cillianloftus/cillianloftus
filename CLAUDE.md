@@ -274,6 +274,23 @@ length. A caption longer than 2 lines still grows past the reservation
 and still shifts things, but real captions on this site are short
 phrases; two lines already covers what was actually happening.
 
+`loadInto()` (loads a trigger's image/size into a given frame) tags each
+call with a per-frame `loadToken`, incremented every call, and only lets a
+full-res preload's `onload` write `frame.img.src` if its token still
+matches the frame's current one. Needed because a touch drag that reverses
+direction mid-swipe calls `loadInto()` again on the same idle frame (to
+swap which neighbor it's carrying in), with no cancellation of whatever
+preload the first call already kicked off — without the token, a slow
+first request's `onload` can still fire after a second, correct one has
+already resolved and landed, silently swapping the idle frame back to the
+wrong (stale) neighbor's image right as the swipe might commit. Reproduced
+and fixed via a deterministic test (not timing-dependent network
+throttling, which turned out to hide the race entirely once
+`preloadNeighbors`'s own cache warms both neighbors first): a
+Playwright-injected fake `Image` class captured `onload` callbacks and
+fired the two in-flight ones in reversed order by hand, which reliably
+failed pre-fix and passed post-fix.
+
 Grid thumbnails that open the lightbox (`button.drawing-image` in
 `DrawingImage.astro`) get a hover/focus state — border switches to
 `--color-accent`, image scales to 1.03 — so it's clear before clicking

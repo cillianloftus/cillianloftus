@@ -93,10 +93,11 @@ import Icon from './icons/Icon.astro';
 		// the other one is idle (hidden) except while a navigation — a
 		// button/key press, or a live touch drag — is in progress, when it
 		// carries the adjacent drawing in from the opposite edge.
-		type FrameRef = { el: HTMLElement; img: HTMLImageElement };
+		type FrameRef = { el: HTMLElement; img: HTMLImageElement; loadToken: number };
 		const frames: FrameRef[] = frameEls.map((el) => ({
 			el,
 			img: el.querySelector('img') as HTMLImageElement,
+			loadToken: 0,
 		}));
 		let activeIndex = 0;
 
@@ -227,12 +228,21 @@ import Icon from './icons/Icon.astro';
 			frame.img.src = thumb?.currentSrc || thumb?.src || trigger.dataset.fullSrc || '';
 			frame.img.alt = trigger.dataset.alt || trigger.dataset.caption || '';
 
+			// A drag reversal calls this again on the same idle frame before an
+			// earlier preload for it has necessarily resolved (nothing cancels
+			// the first request) — without this token, a slow first preload's
+			// onload can fire after a second, correct one has already landed
+			// and stomp frame.img.src back to the wrong (stale) neighbor's
+			// image. Bumping the token per call and checking it in onload
+			// means only the most recent request for this frame is ever
+			// allowed to actually write the src.
+			const thisLoad = ++frame.loadToken;
 			const fullSrc = trigger.dataset.fullSrc;
 			if (fullSrc) {
 				preloaded.add(fullSrc);
 				const preload = new Image();
 				preload.onload = () => {
-					frame.img.src = fullSrc;
+					if (frame.loadToken === thisLoad) frame.img.src = fullSrc;
 				};
 				preload.src = fullSrc;
 			}
