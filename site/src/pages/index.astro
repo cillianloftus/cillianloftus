@@ -33,7 +33,7 @@ const hubLinks = [
 	title="Cillian Loftus"
 	description="Portfolio, CV, drawings and writing of Cillian Loftus, an architecture student at the University of Limerick."
 >
-	<section class="hero" data-pagefind-body>
+	<section class:list={['hero', { 'has-featured': featuredProjects.length > 0 }]} data-pagefind-body>
 		<p class="eyebrow">Architecture Student · Web Developer</p>
 		<h1 data-pagefind-meta="title">A body of work, in progress.</h1>
 		<p class="subtitle">
@@ -84,6 +84,15 @@ const hubLinks = [
 		padding-block: var(--space-5) 0;
 	}
 
+	/* Only when the featured section actually renders does the hero need its
+	   own bottom padding — matching .featured's top padding on the other
+	   side of the border so the rule sits equidistant between the subtitle
+	   and "Featured work". Without a featured project, .hub's own top
+	   padding is the only gap, same as before this section existed. */
+	.hero.has-featured {
+		padding-bottom: var(--space-4);
+	}
+
 	.eyebrow {
 		font-size: var(--step--1);
 		font-weight: 500;
@@ -108,6 +117,7 @@ const hubLinks = [
 
 	.featured {
 		padding-block: var(--space-4) 0;
+		border-top: 1px solid var(--color-border);
 	}
 
 	.featured-grid {
