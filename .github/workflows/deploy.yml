@@ -1,0 +1,52 @@
+name: Deploy site
+
+# Two ways to trigger a deploy:
+# - repository_dispatch, fired by a Sanity webhook whenever content is
+#   published (see the Studio webhook config for the exact filter used —
+#   it only fires on real publishes, not on every draft autosave).
+# - workflow_dispatch, so a deploy can also be run manually from the
+#   Actions tab in GitHub without needing to publish something first.
+on:
+  repository_dispatch:
+    types: [sanity-publish]
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: site
+    env:
+      # Not a secret: Sanity's project ID is already public (it's baked
+      # into the deployed site's own client-side JS for image URLs, and
+      # the dataset itself is queryable with zero auth — verified directly
+      # against the live API). Hardcoding it here avoids managing a GitHub
+      # secret for something that was never actually secret.
+      SANITY_PROJECT_ID: ygdste2q
+      SANITY_DATASET: production
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: site/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+      - name: Deploy to Cloudflare Workers
+        run: npx wrangler deploy
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
