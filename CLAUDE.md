@@ -259,6 +259,21 @@ whenever you navigate or close, so the next image never opens still zoomed
 in from the last one. Backdrop is black at 75% opacity, not fully solid —
 the site stays faintly visible behind it, deliberately.
 
+`.lightbox-caption` has a `min-height` reserving 2 lines regardless of the
+current drawing's actual caption length — without it, a caption that
+happens to wrap to a second line on a narrow (mobile) screen grows
+`.lightbox-footer` (`flex-shrink: 0`), which shrinks `.lightbox-stage`
+(`flex: 1`) by the same amount, which visibly shifts the image (it's
+centered within the stage's own box via `top: 50%`, not the viewport) —
+jarring specifically when navigating from a one-line caption to a
+two-line one, reported and confirmed on a real phone. Reserving the
+2-line height keeps the footer's rendered height constant across
+navigation regardless of which drawing's caption is showing, so the stage
+— and the image centered in it — no longer moves on account of caption
+length. A caption longer than 2 lines still grows past the reservation
+and still shifts things, but real captions on this site are short
+phrases; two lines already covers what was actually happening.
+
 Grid thumbnails that open the lightbox (`button.drawing-image` in
 `DrawingImage.astro`) get a hover/focus state — border switches to
 `--color-accent`, image scales to 1.03 — so it's clear before clicking
@@ -366,6 +381,15 @@ of that. Typing runs `pagefind.debouncedSearch()` (Pagefind's own built-in
 debounce, not a hand-rolled one) against the lazily-loaded Pagefind
 runtime (`/pagefind/pagefind.js`, only fetched on first open, not on every
 page view).
+
+**Only testable after a real build** — `npm run dev` (`astro dev`) never
+runs the `postbuild` step, so there's no `dist/pagefind/` at all in dev
+mode; the search icon and dialog exist there same as anywhere else, but
+there's nothing for it to query, so it'll look broken (empty results for
+everything) despite nothing being wrong. Same category of gotcha as the
+private-page gate needing `wrangler dev` instead of `astro dev` — build
+first (`npm run build`), then `npx wrangler dev` or `npx astro preview`
+to actually exercise it locally.
 
 **Only four pages are actually searchable**: writing entries, public
 portfolio projects, `/cv`, `/colophon`. This isn't a crawl-everything

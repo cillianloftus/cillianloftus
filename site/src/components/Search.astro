@@ -25,6 +25,7 @@ import Icon from './icons/Icon.astro';
 	</form>
 	<ul class="search-results" aria-live="polite"></ul>
 	<p class="search-empty" hidden>No results.</p>
+	<p class="search-error" hidden>Search couldn't load. Try refreshing the page.</p>
 </dialog>
 
 <script>
@@ -36,7 +37,8 @@ import Icon from './icons/Icon.astro';
 		const input = document.querySelector<HTMLInputElement>('.search-input');
 		const resultsList = document.querySelector<HTMLUListElement>('.search-results');
 		const emptyMsg = document.querySelector<HTMLParagraphElement>('.search-empty');
-		if (!toggle || !closeButton || !dialog || !form || !input || !resultsList || !emptyMsg) return;
+		const errorMsg = document.querySelector<HTMLParagraphElement>('.search-error');
+		if (!toggle || !closeButton || !dialog || !form || !input || !resultsList || !emptyMsg || !errorMsg) return;
 
 		// Pagefind's own module — it only exists in dist/pagefind/ after the
 		// postbuild step (`pagefind --site dist`) runs, so it's not
@@ -76,17 +78,34 @@ import Icon from './icons/Icon.astro';
 		// every Vite-based static site generator, not specific to Astro.
 		const dynamicImport = new Function('specifier', 'return import(specifier)') as (specifier: string) => Promise<Pagefind>;
 		let pagefind: Pagefind | null = null;
+		let loadFailed = false;
 		let loadingPromise: Promise<void> | null = null;
 
-		function loadPagefind(): Promise<void> {
+		// Failures here are almost always either a real network problem or a
+		// deploy having only just gone out (this asset can take a moment to
+		// propagate) — neither of which fixes itself mid-keystroke, but both
+		// might have cleared up by the next time the dialog is opened, so the
+		// retry happens there (see the toggle's click handler) rather than on
+		// every character typed. The retry needs a cache-busting query param,
+		// not just a fresh call — confirmed by testing, not assumed: once a
+		// dynamic import() to a given URL has failed, the browser's own
+		// module loader remembers that URL as rejected and won't re-fetch it
+		// no matter how many more times it's imported, independent of
+		// anything this component does; only a URL it hasn't seen before
+		// forces an actual new network attempt. Left off on a normal
+		// (non-retry) load so the asset stays cacheable across dialog opens.
+		function loadPagefind(isRetry = false): Promise<void> {
 			if (!loadingPromise) {
-				loadingPromise = dynamicImport('/pagefind/pagefind.js')
+				const url = isRetry ? `/pagefind/pagefind.js?retry=${Date.now()}` : '/pagefind/pagefind.js';
+				loadingPromise = dynamicImport(url)
 					.then(async (mod) => {
 						pagefind = mod;
 						await mod.init();
+						loadFailed = false;
 					})
 					.catch(() => {
 						pagefind = null;
+						loadFailed = true;
 					});
 			}
 			return loadingPromise;
@@ -114,15 +133,23 @@ import Icon from './icons/Icon.astro';
 		}
 
 		let searchToken = 0;
-		async function runSearch(list: HTMLUListElement, empty: HTMLParagraphElement, term: string) {
+		async function runSearch(list: HTMLUListElement, empty: HTMLParagraphElement, error: HTMLParagraphElement, term: string) {
 			const thisToken = ++searchToken;
 			if (!term) {
 				list.innerHTML = '';
 				empty.hidden = true;
+				error.hidden = true;
 				return;
 			}
 			await loadPagefind();
-			if (!pagefind || thisToken !== searchToken) return;
+			if (thisToken !== searchToken) return;
+			if (!pagefind) {
+				list.innerHTML = '';
+				empty.hidden = true;
+				error.hidden = false;
+				return;
+			}
+			error.hidden = true;
 			const search = await pagefind.debouncedSearch(term, {}, 150);
 			// null means a newer keystroke already superseded this search
 			if (!search || thisToken !== searchToken) return;
@@ -134,14 +161,21 @@ import Icon from './icons/Icon.astro';
 		toggle.addEventListener('click', () => {
 			dialog.showModal();
 			input.focus();
-			loadPagefind();
+			// A previous failed load shouldn't stay failed forever — give it
+			// one fresh attempt each time the dialog is (re)opened.
+			const retry = loadFailed;
+			if (retry) {
+				loadFailed = false;
+				loadingPromise = null;
+			}
+			loadPagefind(retry);
 		});
 
 		closeButton.addEventListener('click', () => dialog.close());
 
 		form.addEventListener('submit', (event) => event.preventDefault());
 
-		input.addEventListener('input', () => runSearch(resultsList, emptyMsg, input.value.trim()));
+		input.addEventListener('input', () => runSearch(resultsList, emptyMsg, errorMsg, input.value.trim()));
 
 		// A click that lands on the dialog element itself (not anything
 		// inside it) is a click on the ::backdrop — dialog has no padding
@@ -155,6 +189,7 @@ import Icon from './icons/Icon.astro';
 			input.value = '';
 			resultsList.innerHTML = '';
 			emptyMsg.hidden = true;
+			errorMsg.hidden = true;
 			searchToken++;
 		});
 	}
@@ -260,7 +295,8 @@ import Icon from './icons/Icon.astro';
 		max-height: calc(70vh - 60px);
 	}
 
-	.search-empty {
+	.search-empty,
+	.search-error {
 		padding: var(--space-3);
 		color: var(--color-text-muted);
 		font-size: var(--step--1);

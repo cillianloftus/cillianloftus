@@ -736,6 +736,20 @@ import Icon from './icons/Icon.astro';
 
 	.lightbox-caption {
 		font-size: var(--step--1);
+		/* Reserves 2 lines' worth of height regardless of the current
+		   drawing's actual caption length — without this, a caption that
+		   wraps to a second line grows .lightbox-footer (flex-shrink: 0),
+		   which shrinks .lightbox-stage (flex: 1) by the same amount, which
+		   shifts the image (centered within the stage's own box, not the
+		   viewport) up to compensate. Reserving max-realistic height here
+		   keeps the footer's rendered height constant across navigation, so
+		   the stage — and the image centered in it — never moves on account
+		   of caption length. The `* 1.5` mirrors global.css's body line-height
+		   (not redeclared locally here, so this has to track it by hand). A
+		   caption longer than 2 lines still grows past this and still shifts
+		   things, but real captions on this site are short phrases — two
+		   lines already covers the case that was actually jarring on mobile. */
+		min-height: calc(var(--step--1) * 1.5 * 2);
 	}
 
 	.lightbox-count {
