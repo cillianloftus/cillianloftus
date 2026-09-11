@@ -284,11 +284,26 @@ password via a Pages Function. Never client-side password checks.
   custom properties.
 - Print stylesheet for `/cv`.
 - Open Graph images generated per page at build time from the first drawing
-  — currently wired for project pages only (`Base`'s `ogImage` prop, sized
-  1200×630 via Sanity's CDN). Other page types (home, `/drawings`, `/writing`
-  entries) don't have an equally unambiguous "first drawing" to draw from,
-  so they're still without one — a real decision needed before extending
-  this further, not an oversight.
+  where one exists — project pages only (`Base`'s `ogImage` prop, sized
+  1200×630 via Sanity's CDN). Every other page (home, `/drawings`,
+  `/writing`, `/cv`, etc.) falls back to a static default
+  (`public/og-default.png`, built from the site's own tokens/font) rather
+  than sharing with no preview image at all.
+- Canonical `<link>` on every page (`Base.astro`, from `Astro.site` +
+  `Astro.url.pathname`), and a `<link rel="preconnect">` to
+  `cdn.sanity.io` — every drawing on every page loads from there.
+- Structured data (JSON-LD): a sitewide `Person` schema in `Base.astro`
+  (built from the same `siteSettings` data powering the footer, so nothing
+  to keep in sync by hand), plus a `CreativeWork` schema on project pages.
+  The escaping helper (`src/lib/seo.ts`'s `jsonLd()`) matters — plain
+  `JSON.stringify` isn't HTML-aware, so a stray `</script>` inside a
+  caption or bio could otherwise break out of the tag.
+- The one above-the-fold image on a page (a project hero) skips lazy
+  loading (`DrawingImage`'s `priority` prop → `loading="eager"
+  fetchpriority="high"`) — lazy-loading an LCP element only delays it for
+  no benefit. Every other image (grid thumbnails, standalone drawings)
+  stays lazy, which is the correct default for anything off-screen at
+  first paint.
 
 ## Deliberately ruled out
 

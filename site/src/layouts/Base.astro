@@ -2,6 +2,7 @@
 import { ClientRouter } from 'astro:transitions';
 import Icon, { type IconName } from '../components/icons/Icon.astro';
 import { getSiteSettings, sanityConfigured } from '../lib/sanity';
+import { jsonLd } from '../lib/seo';
 import '@fontsource/ibm-plex-sans/300.css';
 import '@fontsource/ibm-plex-sans/400.css';
 import '@fontsource/ibm-plex-sans/500.css';
@@ -57,6 +58,25 @@ const socialLinks: { name: string; href: string; icon: IconName }[] = siteSettin
 	: fallbackSocialLinks;
 
 const location = siteSettings?.location || fallbackLocation;
+
+const siteOrigin = Astro.site ?? new URL('https://cillianloftus.com/');
+const canonicalURL = new URL(Astro.url.pathname, siteOrigin).toString();
+
+// Sitewide identity markup — every page benefits from search engines
+// having a clear, structured answer to "whose site is this," not just
+// project pages. Built from the same siteSettings data already powering
+// the footer, so there's nothing to keep in sync by hand.
+const emailLink = socialLinks.find((link) => link.icon === 'email');
+const personSchema = {
+	'@context': 'https://schema.org',
+	'@type': 'Person',
+	name: 'Cillian Loftus',
+	url: siteOrigin.toString(),
+	jobTitle: 'Architecture Student',
+	email: emailLink?.href,
+	homeLocation: { '@type': 'Place', name: location },
+	sameAs: socialLinks.filter((link) => link.icon !== 'email').map((link) => link.href),
+};
 ---
 
 <html lang="en">
@@ -74,6 +94,11 @@ const location = siteSettings?.location || fallbackLocation;
 		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
 		<link rel="icon" href="/favicon.ico" />
 		<link rel="alternate" type="application/rss+xml" title="Cillian Loftus" href="/rss.xml" />
+		<link rel="canonical" href={canonicalURL} />
+		<!-- Every drawing on every page loads from here — starting the
+		     connection before the browser has even parsed the image tags
+		     that need it shaves off DNS/TLS setup time from the first request. -->
+		<link rel="preconnect" href="https://cdn.sanity.io" crossorigin />
 
 		<title>{title}</title>
 		{description && <meta name="description" content={description} />}
@@ -81,7 +106,10 @@ const location = siteSettings?.location || fallbackLocation;
 		<meta property="og:title" content={title} />
 		{description && <meta property="og:description" content={description} />}
 		<meta property="og:image" content={resolvedOgImage} />
+		<meta property="og:url" content={canonicalURL} />
 		<meta name="twitter:card" content="summary_large_image" />
+
+		<script type="application/ld+json" set:html={jsonLd(personSchema)} is:inline />
 
 		<ClientRouter />
 	</head>

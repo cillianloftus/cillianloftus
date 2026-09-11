@@ -8,9 +8,14 @@ interface Props {
 	crop?: boolean;
 	maxHeight?: string;
 	lightbox?: boolean;
+	/** For the one above-the-fold image on a page (a project hero) — skips
+	 * lazy-loading and asks the browser to fetch it first, since lazy-loading
+	 * an LCP element only delays it for no benefit (it's already on screen
+	 * at first paint, there's nothing to wait for scroll-into-view for). */
+	priority?: boolean;
 }
 
-const { drawing, sizes, crop = false, maxHeight, lightbox = false } = Astro.props;
+const { drawing, sizes, crop = false, maxHeight, lightbox = false, priority = false } = Astro.props;
 
 const widths = [480, 800, 1200, 1600, 2000];
 const srcset = widths
@@ -54,7 +59,15 @@ const Tag = lightbox ? 'button' : 'div';
 	data-aspect-ratio={lightbox ? drawing.image.aspectRatio : undefined}
 	aria-label={lightbox ? `Open full view: ${drawing.caption}` : undefined}
 >
-	<img src={src} srcset={srcset} sizes={sizes} alt={alt} loading="lazy" decoding="async" />
+	<img
+		src={src}
+		srcset={srcset}
+		sizes={sizes}
+		alt={alt}
+		loading={priority ? 'eager' : 'lazy'}
+		decoding="async"
+		fetchpriority={priority ? 'high' : undefined}
+	/>
 </Tag>
 
 <style>

@@ -4,6 +4,7 @@ import DrawingImage from '../../components/DrawingImage.astro';
 import Lightbox from '../../components/Lightbox.astro';
 import { getProjects, portableTextToHtml, sanityConfigured, urlFor } from '../../lib/sanity';
 import { projectTypeLabels } from '../../lib/types';
+import { jsonLd } from '../../lib/seo';
 
 export async function getStaticPaths() {
 	const projects = sanityConfigured ? await getProjects() : [];
@@ -21,6 +22,18 @@ const ogImage = project.drawings?.[0]
 	: undefined;
 const typeLabels = projectTypeLabels(project.type);
 
+const projectSchema = {
+	'@context': 'https://schema.org',
+	'@type': 'CreativeWork',
+	name: project.title,
+	url: new URL(Astro.url.pathname, Astro.site).toString(),
+	creator: { '@type': 'Person', name: 'Cillian Loftus' },
+	dateCreated: project.date,
+	image: ogImage,
+	genre: typeLabels || undefined,
+	locationCreated: project.location ? { '@type': 'Place', name: project.location } : undefined,
+};
+
 function sizesAttrFor(size: string | undefined) {
 	if (size === 'full') return '100vw';
 	if (size === 'large') return '(min-width: 900px) 66vw, 100vw';
@@ -29,6 +42,7 @@ function sizesAttrFor(size: string | undefined) {
 ---
 
 <Base title={`${project.title} · Cillian Loftus`} description={typeLabels} ogImage={ogImage}>
+	<script type="application/ld+json" set:html={jsonLd(projectSchema)} is:inline />
 	<article class="project-page">
 		<header>
 			<p class="eyebrow">
@@ -43,7 +57,7 @@ function sizesAttrFor(size: string | undefined) {
 
 		{project.drawings?.[0] && (
 			<div class="hero-thumb" transition:name={`project-image-${project.slug}`}>
-				<DrawingImage drawing={project.drawings[0]} sizes="100vw" maxHeight="min(60vh, 44rem)" lightbox />
+				<DrawingImage drawing={project.drawings[0]} sizes="100vw" maxHeight="min(60vh, 44rem)" lightbox priority />
 				<p class="caption">{project.drawings[0].caption}</p>
 			</div>
 		)}
