@@ -1,5 +1,9 @@
 ---
 import Base from '../layouts/Base.astro';
+import ProjectCard from '../components/ProjectCard.astro';
+import { getFeaturedProjects, sanityConfigured } from '../lib/sanity';
+
+const featuredProjects = sanityConfigured ? await getFeaturedProjects() : [];
 
 const hubLinks = [
 	{
@@ -37,6 +41,21 @@ const hubLinks = [
 			occasional line of code.
 		</p>
 	</section>
+
+	{
+		featuredProjects.length > 0 && (
+			<section class="featured" data-pagefind-body>
+				<p class="eyebrow">Featured work</p>
+				<ul class="featured-grid">
+					{featuredProjects.map((project) => (
+						<li>
+							<ProjectCard project={project} />
+						</li>
+					))}
+				</ul>
+			</section>
+		)
+	}
 
 	<section class="hub" data-pagefind-body>
 		<ul class="hub-list">
@@ -85,6 +104,22 @@ const hubLinks = [
 		margin-top: var(--space-3);
 		font-size: var(--step-1);
 		color: var(--color-text-muted);
+	}
+
+	.featured {
+		padding-block: var(--space-4) 0;
+	}
+
+	.featured-grid {
+		display: grid;
+		grid-template-columns: 1fr;
+		gap: var(--space-4);
+	}
+
+	@media (min-width: 700px) {
+		.featured-grid {
+			grid-template-columns: repeat(2, 1fr);
+		}
 	}
 
 	.hub {

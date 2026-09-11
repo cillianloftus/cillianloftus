@@ -408,29 +408,36 @@ private-page gate needing `wrangler dev` instead of `astro dev` — build
 first (`npm run build`), then `npx wrangler dev` or `npx astro preview`
 to actually exercise it locally.
 
-**Only four pages are actually searchable**: writing entries, public
-portfolio projects, `/cv`, `/colophon`. This isn't a crawl-everything
-index with exclusions bolted on — it's the reverse and matters for a
-concrete reason: Pagefind's indexer only indexes pages carrying a
-`data-pagefind-body` attribute *once that attribute exists anywhere on the
-site* (its documented behavior — presence anywhere flips the whole site
-into opt-in mode, pages without it are skipped entirely). `/private/[slug]`
-never carries it, on either of its two possible render paths
-(`ProjectDetail.astro` only adds it when its `indexable` prop is
+**Search covers every public page** (home, `/portfolio`, `/drawings`,
+`/writing`, `/cv`, `/colophon`, each `/writing/[slug]`, each public
+`/portfolio/[slug]`) **and nothing else** — 8 pages/templates as of the
+last build (`Indexed 8 pages` in the `pagefind` postbuild output). Started
+scoped to just 4 (writing entries, public portfolio projects, `/cv`,
+`/colophon`) and was widened once it was clear the private-exclusion
+mechanism was structural rather than a manually-maintained list — see
+below — so adding `data-pagefind-body` to the remaining index/hub pages
+carried no risk of also exposing `/private/*`. This isn't a
+crawl-everything index with exclusions bolted on — it's the reverse and
+matters for a concrete reason: Pagefind's indexer only indexes pages
+carrying a `data-pagefind-body` attribute *once that attribute exists
+anywhere on the site* (its documented behavior — presence anywhere flips
+the whole site into opt-in mode, pages without it are skipped entirely).
+`/private/[slug]` never carries it, on either of its two possible render
+paths (`ProjectDetail.astro` only adds it when its `indexable` prop is
 explicitly passed `true`, and only `/portfolio/[slug].astro` ever passes
 that — `/private/[slug].astro` doesn't), so it's structurally impossible
 for password-gated content to end up sitting in the public search index,
 not just something excluded by a rule that has to be remembered and kept
 in sync elsewhere. Verified directly, not just reasoned about: decompressed
-the built index's fragment files and confirmed exactly the 4 intended URLs
+the built index's fragment files and confirmed exactly the intended URLs
 are in there and nothing else, and confirmed searching for the private
 project's own name returns zero results.
 
 Search result **titles** come from each page's real `<h1>`, tagged
 `data-pagefind-meta="title"` — without it Pagefind falls back to
 `document.title`, which on this site always has the `· Cillian Loftus`
-suffix baked in (fine as a browser tab title, redundant repeated four
-times down a results list).
+suffix baked in (fine as a browser tab title, redundant repeated down a
+results list).
 
 **Gotcha hit building this, worth remembering**: dynamically importing
 `/pagefind/pagefind.js` — a module that doesn't exist yet at Vite's own
@@ -649,6 +656,23 @@ with zero projects/drawings baked in (the deployed `dist` predated the
 current Sanity content) until this was caught and redeployed.
 
 Search (see "Search" under Key Features) is wired in — Pagefind indexing
-four pages (writing entries, public portfolio projects, `/cv`,
-`/colophon`), a header icon opening a native `<dialog>` with results
+every public page, a header icon opening a native `<dialog>` with results
 styled to match the rest of the site.
+
+The home page's `featured` project flag (`project.featured` — its own
+schema description says "surfaces this project on the home page") went
+unused for a while: `getFeaturedProjects()` existed in `sanity.ts` with no
+call site anywhere, so toggling it in Studio did nothing. Fixed by adding
+a "Featured work" section to `index.astro`, between the hero and the hub
+link list, rendered only when at least one project is actually featured
+(no empty heading with nothing under it). Built on a new
+`ProjectCard.astro` — the card markup/styles that used to live only in
+`portfolio/index.astro` — extracted so the home page's featured cards and
+the portfolio index's cards are one shared component, not a hand-copy
+(same reasoning as the private-gate's chrome-reuse fix: one changes, the
+other can't drift out of sync). Both call sites pass `project` and get the
+same `transition:name={project-image-${slug}}` on the thumbnail, so the
+View-Transitions hero-morph into `/portfolio/[slug]` still works whichever
+page you navigate from — confirmed by comparing the computed
+`viewTransitionName` on both ends of a real navigation, not just by
+inspecting the markup.

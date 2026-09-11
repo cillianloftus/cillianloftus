@@ -1,8 +1,7 @@
 ---
 import Base from '../../layouts/Base.astro';
-import DrawingImage from '../../components/DrawingImage.astro';
+import ProjectCard from '../../components/ProjectCard.astro';
 import { getProjects, sanityConfigured } from '../../lib/sanity';
-import { projectTypeLabels } from '../../lib/types';
 
 const projects = sanityConfigured ? await getProjects() : [];
 ---
@@ -18,21 +17,7 @@ const projects = sanityConfigured ? await getProjects() : [];
 			{
 				projects.map((project) => (
 					<li>
-						<a class="project-card" href={`/portfolio/${project.slug}`}>
-							{project.drawings?.[0] && (
-								<div class="project-thumb" transition:name={`project-image-${project.slug}`}>
-									<DrawingImage drawing={project.drawings[0]} sizes="(min-width: 700px) 50vw, 100vw" crop />
-								</div>
-							)}
-							<div class="project-copy">
-								<h2>{project.title}</h2>
-								<p class="project-meta">
-									{[projectTypeLabels(project.type), project.date?.slice(0, 4), project.location]
-										.filter(Boolean)
-										.join(' · ')}
-								</p>
-							</div>
-						</a>
+						<ProjectCard project={project} />
 					</li>
 				))
 			}
@@ -75,41 +60,4 @@ const projects = sanityConfigured ? await getProjects() : [];
 			grid-template-columns: repeat(2, 1fr);
 		}
 	}
-
-	.project-card {
-		display: flex;
-		flex-direction: column;
-		gap: var(--space-2);
-		text-decoration: none;
-		color: inherit;
-	}
-
-	.project-thumb {
-		transition: opacity 0.15s ease;
-	}
-
-	.project-card:hover .project-thumb,
-	.project-card:focus-visible .project-thumb {
-		opacity: 0.85;
-	}
-
-	.project-copy h2 {
-		font-size: var(--step-1);
-		font-weight: 600;
-		letter-spacing: -0.01em;
-		transition: color 0.15s ease;
-	}
-
-	.project-card:hover .project-copy h2,
-	.project-card:focus-visible .project-copy h2 {
-		color: var(--color-accent);
-	}
-
-	.project-meta {
-		font-size: var(--step--1);
-		color: var(--color-text-muted);
-		margin-top: 0.3em;
-		margin-bottom: 0.5em;
-	}
-
 </style>

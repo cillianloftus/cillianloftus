@@ -11,7 +11,15 @@ const siteSettings = sanityConfigured ? await getSiteSettings() : null;
 
 const location = siteSettings?.location || fallbackLocation;
 const email = siteSettings?.email || fallbackEmail;
-const cvHref = siteSettings?.cvFile || fallbackCvHref;
+// Sanity's file CDN serves with `Content-Disposition: inline` by default —
+// confirmed live (curl -I on the deployed cvFile URL) — so the `download`
+// attribute below, being cross-origin, is silently ignored by the browser
+// and "Download PDF" just opens the PDF instead. `?dl` makes Sanity itself
+// send `Content-Disposition: attachment` (with the file's own original
+// filename), which works regardless of cross-origin `download` limits.
+// Doesn't apply to the local same-origin fallback, where `download` already
+// works on its own.
+const cvHref = siteSettings?.cvFile ? `${siteSettings.cvFile}?dl` : fallbackCvHref;
 
 const about =
 	'Architecture student at the University of Limerick, having completed third year and seeking a work placement for professional experience before fourth year. Award-winning writer and researcher on AI infrastructure, with three years of studio work adapting existing buildings across Limerick City. Brings an analytical foundation from prior mathematics study, alongside strong design software skills and hands-on model-making experience.';

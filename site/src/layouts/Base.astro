@@ -232,6 +232,18 @@ const personSchema = {
 					openToggle.removeAttribute('open');
 				}
 			});
+
+			// The mobile nav's <details>/<summary> has no built-in Escape
+			// handling (unlike the search dialog's native <dialog>, which gets
+			// it for free) — added to match.
+			document.addEventListener('keydown', function (event) {
+				if (event.key !== 'Escape') return;
+				var openToggle = document.querySelector('.nav-toggle[open]');
+				if (!openToggle) return;
+				openToggle.removeAttribute('open');
+				var button = openToggle.querySelector('.nav-toggle-button');
+				if (button) button.focus();
+			});
 		</script>
 	</body>
 </html>

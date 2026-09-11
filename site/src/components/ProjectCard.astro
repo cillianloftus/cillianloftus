@@ -1,0 +1,66 @@
+---
+import DrawingImage from './DrawingImage.astro';
+import { projectTypeLabels } from '../lib/types';
+import type { Project } from '../lib/types';
+
+interface Props {
+	project: Project;
+	sizes?: string;
+}
+
+const { project, sizes = '(min-width: 700px) 50vw, 100vw' } = Astro.props;
+---
+
+<a class="project-card" href={`/portfolio/${project.slug}`}>
+	{
+		project.drawings?.[0] && (
+			<div class="project-thumb" transition:name={`project-image-${project.slug}`}>
+				<DrawingImage drawing={project.drawings[0]} sizes={sizes} crop />
+			</div>
+		)
+	}
+	<div class="project-copy">
+		<h2>{project.title}</h2>
+		<p class="project-meta">
+			{[projectTypeLabels(project.type), project.date?.slice(0, 4), project.location].filter(Boolean).join(' · ')}
+		</p>
+	</div>
+</a>
+
+<style>
+	.project-card {
+		display: flex;
+		flex-direction: column;
+		gap: var(--space-2);
+		text-decoration: none;
+		color: inherit;
+	}
+
+	.project-thumb {
+		transition: opacity 0.15s ease;
+	}
+
+	.project-card:hover .project-thumb,
+	.project-card:focus-visible .project-thumb {
+		opacity: 0.85;
+	}
+
+	.project-copy h2 {
+		font-size: var(--step-1);
+		font-weight: 600;
+		letter-spacing: -0.01em;
+		transition: color 0.15s ease;
+	}
+
+	.project-card:hover .project-copy h2,
+	.project-card:focus-visible .project-copy h2 {
+		color: var(--color-accent);
+	}
+
+	.project-meta {
+		font-size: var(--step--1);
+		color: var(--color-text-muted);
+		margin-top: 0.3em;
+		margin-bottom: 0.5em;
+	}
+</style>
