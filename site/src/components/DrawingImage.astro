@@ -18,10 +18,22 @@ interface Props {
 const { drawing, sizes, crop = false, maxHeight, lightbox = false, priority = false } = Astro.props;
 
 const widths = [480, 800, 1200, 1600, 2000];
+// Cropped mode (the portfolio index's uniform 4:3 card) asks Sanity's CDN
+// for a pre-cropped image at that exact ratio rather than requesting the
+// full image and letting CSS object-fit:cover clip it client-side — the
+// CDN crop automatically centers on each image's own hotspot (set per
+// image in the Studio, `options: { hotspot: true }` on the schema), so the
+// crop respects what's actually important in the drawing instead of
+// blindly cutting from the geometric center.
 const srcset = widths
-	.map((width) => `${urlFor(drawing.image).width(width).auto('format').url()} ${width}w`)
+	.map((width) => {
+		const img = urlFor(drawing.image).width(width);
+		return `${(crop ? img.height(Math.round((width * 3) / 4)).fit('crop') : img).auto('format').url()} ${width}w`;
+	})
 	.join(', ');
-const src = urlFor(drawing.image).width(1200).auto('format').url();
+const src = (crop ? urlFor(drawing.image).width(1200).height(900).fit('crop') : urlFor(drawing.image).width(1200))
+	.auto('format')
+	.url();
 // Wider than the grid srcset's max on purpose: this is what the lightbox
 // opens at full-viewport size, and its 2.2x desktop zoom (Lightbox.astro's
 // DESKTOP_ZOOM_SCALE) stacks with the display's own device pixel ratio —

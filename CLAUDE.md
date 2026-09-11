@@ -378,8 +378,12 @@ cropping — the box is sized to the image's own ratio (via
 `asset->metadata.dimensions.aspectRatio`), not a guessed fixed one. The one
 exception is a `crop` prop used only for the Portfolio index's small
 per-project thumbnail, where a uniform card shape matters more than showing
-the whole sheet (plain 4:3, object-fit: cover). Focal-point-aware cropping
-(using each image's hotspot) isn't wired in there yet.
+the whole sheet (4:3). The crop is requested pre-cropped from Sanity's CDN
+(`.width(w).height(w * 3/4).fit('crop')`) rather than sent full-size and
+clipped client-side via `object-fit: cover` — the CDN's crop automatically
+centers on each image's own hotspot (`options: { hotspot: true }` on the
+`projectDrawing`/`drawing` schemas, set per image in the Studio) when one's
+been set, falling back to a plain center crop otherwise, same as before.
 
 `/drawings` and the project page's drawing grid use a hand-rolled masonry
 (plain JS, not a framework island — same category as the filter script):

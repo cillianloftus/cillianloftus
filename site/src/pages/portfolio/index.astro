@@ -21,7 +21,7 @@ const projects = sanityConfigured ? await getProjects() : [];
 						<a class="project-card" href={`/portfolio/${project.slug}`}>
 							{project.drawings?.[0] && (
 								<div class="project-thumb" transition:name={`project-image-${project.slug}`}>
-									<DrawingImage drawing={project.drawings[0]} sizes="(min-width: 700px) 50vw, 100vw" />
+									<DrawingImage drawing={project.drawings[0]} sizes="(min-width: 700px) 50vw, 100vw" crop />
 								</div>
 							)}
 							<div class="project-copy">
