@@ -119,6 +119,14 @@ function sizesAttrFor(size: string | undefined) {
 
 <script is:inline>
 	function initDrawingsFilter() {
+		// This re-runs on every astro:after-swap (client-side nav via View
+		// Transitions), but window-level listeners added below aren't scoped
+		// to the DOM it swaps out — without removing the previous run's pair
+		// first, repeat visits to this page permanently accumulate resize/
+		// popstate listeners, each closing over that visit's now-detached
+		// `list`/`items`/`state`.
+		if (window.__drawingsFilterCleanup) window.__drawingsFilterCleanup();
+
 		var root = document.querySelector('.drawings-page');
 		if (!root) return;
 
@@ -319,10 +327,17 @@ function sizesAttrFor(size: string | undefined) {
 		window.addEventListener('popstate', render);
 
 		var resizeTimer;
-		window.addEventListener('resize', () => {
+		function onResize() {
 			clearTimeout(resizeTimer);
 			resizeTimer = setTimeout(layoutMasonry, 150);
-		});
+		}
+		window.addEventListener('resize', onResize);
+
+		window.__drawingsFilterCleanup = () => {
+			window.removeEventListener('popstate', render);
+			window.removeEventListener('resize', onResize);
+			clearTimeout(resizeTimer);
+		};
 
 		render();
 	}

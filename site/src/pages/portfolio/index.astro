@@ -27,7 +27,9 @@ const projects = sanityConfigured ? await getProjects() : [];
 							<div class="project-copy">
 								<h2>{project.title}</h2>
 								<p class="project-meta">
-									{projectTypeLabels(project.type)} &middot; {project.date?.slice(0, 4)} &middot; {project.location}
+									{[projectTypeLabels(project.type), project.date?.slice(0, 4), project.location]
+										.filter(Boolean)
+										.join(' · ')}
 								</p>
 							</div>
 						</a>

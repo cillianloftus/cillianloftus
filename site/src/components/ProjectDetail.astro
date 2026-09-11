@@ -35,8 +35,7 @@ function sizesAttrFor(size: string | undefined) {
 		</p>
 		<h1 data-pagefind-meta="title">{project.title}</h1>
 		<p class="project-meta">
-			{typeLabels} &middot; {project.date?.slice(0, 4)} &middot; {project.location}
-			{project.role && <> &middot; {project.role}</>}
+			{[typeLabels, project.date?.slice(0, 4), project.location, project.role].filter(Boolean).join(' · ')}
 		</p>
 	</header>
 
@@ -65,6 +64,16 @@ function sizesAttrFor(size: string | undefined) {
 
 <script is:inline>
 	function initDrawingMasonry() {
+		// Re-runs on every astro:after-swap (client-side nav via View
+		// Transitions) — without removing the previous run's resize listener
+		// first, repeat visits to project pages permanently accumulate one
+		// per visit, each closing over that visit's now-detached `list`/
+		// `items` (same fix as drawings.astro's initDrawingsFilter).
+		if (window.__masonryResizeHandler) {
+			window.removeEventListener('resize', window.__masonryResizeHandler);
+			window.__masonryResizeHandler = null;
+		}
+
 		var list = document.querySelector('.project-page .drawing-list');
 		if (!list) return;
 
@@ -141,10 +150,11 @@ function sizesAttrFor(size: string | undefined) {
 		}
 
 		var resizeTimer;
-		window.addEventListener('resize', () => {
+		window.__masonryResizeHandler = () => {
 			clearTimeout(resizeTimer);
 			resizeTimer = setTimeout(layoutMasonry, 150);
-		});
+		};
+		window.addEventListener('resize', window.__masonryResizeHandler);
 
 		layoutMasonry();
 	}
