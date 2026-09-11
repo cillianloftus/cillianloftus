@@ -17,6 +17,12 @@ interface Props {
 
 const { title, description, ogImage } = Astro.props;
 
+// Every page gets an og:image — most just fall back to this static default
+// (site name/tagline, matches the homepage's own copy) rather than sharing
+// with no preview image at all. Only project pages currently pass their own
+// (the project's first drawing).
+const resolvedOgImage = ogImage ?? new URL('/og-default.png', Astro.site ?? 'https://cillianloftus.com').toString();
+
 const pathname = Astro.url.pathname;
 const isHome = pathname === '/';
 
@@ -74,7 +80,7 @@ const location = siteSettings?.location || fallbackLocation;
 
 		<meta property="og:title" content={title} />
 		{description && <meta property="og:description" content={description} />}
-		{ogImage && <meta property="og:image" content={ogImage} />}
+		<meta property="og:image" content={resolvedOgImage} />
 		<meta name="twitter:card" content="summary_large_image" />
 
 		<ClientRouter />
