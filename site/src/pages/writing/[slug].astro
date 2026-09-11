@@ -21,12 +21,12 @@ const bodyHtml = portableTextToHtml(entry.body);
 ---
 
 <Base title={`${entry.title} · Cillian Loftus`} description={entry.summary}>
-	<article class="writing-entry">
+	<article class="writing-entry" data-pagefind-body>
 		<header>
 			<p class="eyebrow">
 				<a href="/writing">Writing</a> &middot; {categoryLabels[entry.category]}
 			</p>
-			<h1>{entry.title}</h1>
+			<h1 data-pagefind-meta="title">{entry.title}</h1>
 			<p class="entry-date">
 				<time datetime={entry.date}>
 					{new Date(entry.date).toLocaleDateString('en-IE', { year: 'numeric', month: 'long' })}

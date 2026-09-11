@@ -1,0 +1,314 @@
+---
+import Icon from './icons/Icon.astro';
+---
+
+<button type="button" class="search-toggle" aria-label="Search" data-search-open>
+	<Icon name="search" size={20} />
+</button>
+
+<dialog class="search-dialog" aria-label="Search">
+	<form class="search-form" data-search-form>
+		<Icon name="search" size={16} class="search-form-icon" />
+		<input
+			type="search"
+			class="search-input"
+			placeholder="Search the site…"
+			aria-label="Search query"
+			autocomplete="off"
+			autocapitalize="off"
+			autocorrect="off"
+			spellcheck="false"
+		/>
+		<button type="button" class="search-close" aria-label="Close search" data-search-close>
+			<Icon name="close" size={16} />
+		</button>
+	</form>
+	<ul class="search-results" aria-live="polite"></ul>
+	<p class="search-empty" hidden>No results.</p>
+</dialog>
+
+<script>
+	function initSearch() {
+		const toggle = document.querySelector<HTMLButtonElement>('[data-search-open]');
+		const closeButton = document.querySelector<HTMLButtonElement>('[data-search-close]');
+		const dialog = document.querySelector<HTMLDialogElement>('.search-dialog');
+		const form = document.querySelector<HTMLFormElement>('[data-search-form]');
+		const input = document.querySelector<HTMLInputElement>('.search-input');
+		const resultsList = document.querySelector<HTMLUListElement>('.search-results');
+		const emptyMsg = document.querySelector<HTMLParagraphElement>('.search-empty');
+		if (!toggle || !closeButton || !dialog || !form || !input || !resultsList || !emptyMsg) return;
+
+		// Pagefind's own module — it only exists in dist/pagefind/ after the
+		// postbuild step (`pagefind --site dist`) runs, so it's not
+		// resolvable at all in `astro dev` (no build has happened yet), and
+		// there's no real package to hang an ambient module declaration off
+		// (astro check's script-block resolution doesn't honor one written
+		// for the literal path anyway). The `: string` annotation below
+		// widens the URL past its literal type, which is what makes
+		// TypeScript treat the import() as untyped instead of trying — and
+		// failing — to resolve it as a real module specifier; the actual
+		// shape used is asserted explicitly on the awaited result instead.
+		interface PagefindResultData {
+			url: string;
+			meta: { title?: string };
+			excerpt: string;
+		}
+		interface Pagefind {
+			init(): Promise<void>;
+			debouncedSearch(
+				term: string,
+				options?: Record<string, unknown>,
+				timeout?: number,
+			): Promise<{ results: { id: string; data: () => Promise<PagefindResultData> }[] } | null>;
+		}
+		// A plain `import(/* @vite-ignore */ '/pagefind/pagefind.js')` still
+		// isn't enough on its own — Vite's build wraps *any* import() it can
+		// see in the source, `@vite-ignore` or not, in its own modulepreload
+		// helper, which leaves a literal, never-substituted __VITE_PRELOAD__
+		// token in the output (a known Vite issue, since the target genuinely
+		// doesn't exist at Vite's own build time for it to resolve a preload
+		// list against — vitejs/vite#18551) — that throws at runtime the
+		// instant this ever actually runs. Building the import() inside a
+		// `Function` body instead hides it from Vite's static analysis
+		// completely, since from the bundler's perspective there's no
+		// import() call anywhere in this file's source at all, just a string
+		// handed to `Function` — the standard workaround for this across
+		// every Vite-based static site generator, not specific to Astro.
+		const dynamicImport = new Function('specifier', 'return import(specifier)') as (specifier: string) => Promise<Pagefind>;
+		let pagefind: Pagefind | null = null;
+		let loadingPromise: Promise<void> | null = null;
+
+		function loadPagefind(): Promise<void> {
+			if (!loadingPromise) {
+				loadingPromise = dynamicImport('/pagefind/pagefind.js')
+					.then(async (mod) => {
+						pagefind = mod;
+						await mod.init();
+					})
+					.catch(() => {
+						pagefind = null;
+					});
+			}
+			return loadingPromise;
+		}
+
+		function renderResults(list: HTMLUListElement, empty: HTMLParagraphElement, results: PagefindResultData[]) {
+			list.innerHTML = '';
+			empty.hidden = results.length > 0;
+			for (const result of results) {
+				const li = document.createElement('li');
+				const a = document.createElement('a');
+				a.href = result.url;
+				const title = document.createElement('p');
+				title.className = 'search-result-title';
+				title.textContent = result.meta?.title || result.url;
+				const excerpt = document.createElement('p');
+				excerpt.className = 'search-result-excerpt';
+				// Pagefind generates this from the site's own indexed content
+				// (with <mark> around the match) — not user input, safe to set.
+				excerpt.innerHTML = result.excerpt;
+				a.append(title, excerpt);
+				li.append(a);
+				list.append(li);
+			}
+		}
+
+		let searchToken = 0;
+		async function runSearch(list: HTMLUListElement, empty: HTMLParagraphElement, term: string) {
+			const thisToken = ++searchToken;
+			if (!term) {
+				list.innerHTML = '';
+				empty.hidden = true;
+				return;
+			}
+			await loadPagefind();
+			if (!pagefind || thisToken !== searchToken) return;
+			const search = await pagefind.debouncedSearch(term, {}, 150);
+			// null means a newer keystroke already superseded this search
+			if (!search || thisToken !== searchToken) return;
+			const data = await Promise.all(search.results.slice(0, 8).map((r) => r.data()));
+			if (thisToken !== searchToken) return;
+			renderResults(list, empty, data);
+		}
+
+		toggle.addEventListener('click', () => {
+			dialog.showModal();
+			input.focus();
+			loadPagefind();
+		});
+
+		closeButton.addEventListener('click', () => dialog.close());
+
+		form.addEventListener('submit', (event) => event.preventDefault());
+
+		input.addEventListener('input', () => runSearch(resultsList, emptyMsg, input.value.trim()));
+
+		// A click that lands on the dialog element itself (not anything
+		// inside it) is a click on the ::backdrop — dialog has no padding
+		// of its own outside its content, so this can't misfire from
+		// clicking near the edge of the actual panel.
+		dialog.addEventListener('click', (event) => {
+			if (event.target === dialog) dialog.close();
+		});
+
+		dialog.addEventListener('close', () => {
+			input.value = '';
+			resultsList.innerHTML = '';
+			emptyMsg.hidden = true;
+			searchToken++;
+		});
+	}
+
+	initSearch();
+	document.addEventListener('astro:after-swap', initSearch);
+</script>
+
+<style>
+	.search-toggle {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		width: 44px;
+		height: 44px;
+		background: none;
+		border: none;
+		padding: 0;
+		color: var(--color-text);
+		cursor: pointer;
+		transition: color 0.15s ease;
+	}
+
+	.search-toggle:hover,
+	.search-toggle:focus-visible {
+		color: var(--color-accent);
+	}
+
+	.search-dialog {
+		margin: 10vh auto auto;
+		width: min(92vw, 34rem);
+		max-height: 70vh;
+		padding: 0;
+		border: 1px solid var(--color-border);
+		background: var(--color-bg);
+		color: var(--color-text);
+		box-shadow: 0 16px 48px rgba(0, 0, 0, 0.2);
+	}
+
+	.search-dialog::backdrop {
+		background: rgba(0, 0, 0, 0.75);
+	}
+
+	.search-form {
+		display: flex;
+		align-items: center;
+		gap: var(--space-2);
+		padding: var(--space-2) var(--space-3);
+		border-bottom: 1px solid var(--color-border);
+	}
+
+	.search-form :global(.search-form-icon) {
+		flex-shrink: 0;
+		color: var(--color-text-muted);
+	}
+
+	.search-input {
+		flex: 1;
+		min-width: 0;
+		min-height: 44px;
+		border: none;
+		background: none;
+		color: var(--color-text);
+		font: inherit;
+		font-size: var(--step-0);
+	}
+
+	.search-input:focus {
+		outline: none;
+	}
+
+	/* Removes the native browser "clear" and "search" icon decorations on
+	   type="search" so the custom close button (which does the same job,
+	   closing the whole dialog rather than just clearing the field) is the
+	   only clear affordance. */
+	.search-input::-webkit-search-decoration,
+	.search-input::-webkit-search-cancel-button {
+		display: none;
+	}
+
+	.search-close {
+		flex-shrink: 0;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		width: 44px;
+		height: 44px;
+		margin-right: calc(var(--space-1) * -1);
+		background: none;
+		border: none;
+		color: var(--color-text-muted);
+		cursor: pointer;
+		transition: color 0.15s ease;
+	}
+
+	.search-close:hover,
+	.search-close:focus-visible {
+		color: var(--color-accent);
+	}
+
+	.search-results {
+		overflow-y: auto;
+		max-height: calc(70vh - 60px);
+	}
+
+	.search-empty {
+		padding: var(--space-3);
+		color: var(--color-text-muted);
+		font-size: var(--step--1);
+	}
+</style>
+
+<style is:global>
+	/* Everything below styles result <li>/<a>/<p>/<mark> elements the script
+	   builds with document.createElement/innerHTML at runtime — Astro's
+	   scoped-style attribute only ever gets stamped onto elements that exist
+	   in this component's own template at build time, so a normal scoped
+	   rule here would compile correctly but silently never match anything
+	   (confirmed: without this, the whole result list rendered in
+	   default browser mark/link styling, none of the intended CSS applied).
+	   Kept in its own is:global block rather than reaching for :global() on
+	   every individual selector below, and kept separate from the scoped
+	   block above so the toggle/dialog/form rules (which target real
+	   template elements) stay properly scoped. */
+	.search-results li + li {
+		border-top: 1px solid var(--color-border);
+	}
+
+	.search-results a {
+		display: block;
+		padding: var(--space-2) var(--space-3);
+		text-decoration: none;
+		color: inherit;
+	}
+
+	.search-results a:hover,
+	.search-results a:focus-visible {
+		background: var(--color-surface);
+	}
+
+	.search-result-title {
+		font-weight: 600;
+		font-size: var(--step-0);
+		margin-bottom: 0.2em;
+	}
+
+	.search-result-excerpt {
+		font-size: var(--step--1);
+		color: var(--color-text-muted);
+	}
+
+	.search-result-excerpt mark {
+		background: none;
+		color: var(--color-accent);
+		font-weight: 600;
+	}
+</style>

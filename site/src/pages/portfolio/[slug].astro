@@ -35,6 +35,6 @@ const projectSchema = {
 
 <Base title={`${project.title} · Cillian Loftus`} description={typeLabels} ogImage={ogImage}>
 	<script type="application/ld+json" set:html={jsonLd(projectSchema)} is:inline />
-	<ProjectDetail project={project} eyebrowLabel="Portfolio" eyebrowHref="/portfolio" />
+	<ProjectDetail project={project} eyebrowLabel="Portfolio" eyebrowHref="/portfolio" indexable />
 	<Lightbox />
 </Base>

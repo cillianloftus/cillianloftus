@@ -350,6 +350,65 @@ back by a real browser or `curl`'s cookie jar — a false "not logged in"
 that only happens locally, not in production, where the site is always
 HTTPS.
 
+**Search** — Pagefind, not a hosted search service; it builds a static
+search index from the built HTML at deploy time (`pagefind --site dist`,
+wired in as `package.json`'s `postbuild` script, so it runs automatically
+right after `npm run build` — no change needed to the GitHub Actions
+deploy workflow). A search icon in the header (`Search.astro`, rendered
+from `Base.astro`'s `.header-end` on every page, not just non-home ones)
+opens a native `<dialog>` — chosen specifically because a native dialog
+shown via `.showModal()` renders in the browser's top layer regardless of
+where it sits in the DOM, sidestepping the exact ancestor-stacking-context
+problem (`.site-header`'s own `backdrop-filter` creates a containing block
+for `position: fixed` descendants) the Lightbox has to work around by
+relocating itself to be a direct child of `<body>` — the dialog needs none
+of that. Typing runs `pagefind.debouncedSearch()` (Pagefind's own built-in
+debounce, not a hand-rolled one) against the lazily-loaded Pagefind
+runtime (`/pagefind/pagefind.js`, only fetched on first open, not on every
+page view).
+
+**Only four pages are actually searchable**: writing entries, public
+portfolio projects, `/cv`, `/colophon`. This isn't a crawl-everything
+index with exclusions bolted on — it's the reverse and matters for a
+concrete reason: Pagefind's indexer only indexes pages carrying a
+`data-pagefind-body` attribute *once that attribute exists anywhere on the
+site* (its documented behavior — presence anywhere flips the whole site
+into opt-in mode, pages without it are skipped entirely). `/private/[slug]`
+never carries it, on either of its two possible render paths
+(`ProjectDetail.astro` only adds it when its `indexable` prop is
+explicitly passed `true`, and only `/portfolio/[slug].astro` ever passes
+that — `/private/[slug].astro` doesn't), so it's structurally impossible
+for password-gated content to end up sitting in the public search index,
+not just something excluded by a rule that has to be remembered and kept
+in sync elsewhere. Verified directly, not just reasoned about: decompressed
+the built index's fragment files and confirmed exactly the 4 intended URLs
+are in there and nothing else, and confirmed searching for the private
+project's own name returns zero results.
+
+Search result **titles** come from each page's real `<h1>`, tagged
+`data-pagefind-meta="title"` — without it Pagefind falls back to
+`document.title`, which on this site always has the `· Cillian Loftus`
+suffix baked in (fine as a browser tab title, redundant repeated four
+times down a results list).
+
+**Gotcha hit building this, worth remembering**: dynamically importing
+`/pagefind/pagefind.js` — a module that doesn't exist yet at Vite's own
+build time, since the postbuild step that generates it hasn't run yet —
+threw `__VITE_PRELOAD__ is not defined` at runtime. Vite wraps *any*
+`import()` it can see in the source in its own modulepreload helper
+regardless of a `/* @vite-ignore */` comment on it, and since the import
+target can't be resolved into a real preload chunk list, it leaves a
+literal, never-substituted `__VITE_PRELOAD__` token sitting in the output
+(a known Vite issue, not specific to Astro or Pagefind — vitejs/vite#18551).
+Disabling `vite.build.modulePreload` sitewide did *not* fix it. What
+actually worked: hiding the `import()` call from Vite's static analysis
+entirely by building it inside a `Function` constructor
+(`new Function('specifier', 'return import(specifier)')`) — from the
+bundler's perspective there's then no `import()` expression anywhere in
+the source to wrap in the first place. This is the standard workaround for
+this exact problem across Vite-based static site generators generally,
+not something specific to this project.
+
 ## Conventions
 
 - Mobile-first CSS. `clamp()` for type scale, `auto-fill` grids over media
@@ -402,7 +461,6 @@ HTTPS.
 
 - CV as structured data rendering to both web and PDF, versus simply
   uploading a PDF. Start with the PDF.
-- Pagefind search — worth adding once the writing archive has volume.
 
 ## Gotchas
 
@@ -538,13 +596,9 @@ that route gets `noindex` — see "Protected pages" above.
 `/private/[slug]` is built — password gate (`worker/index.ts`), content
 query (`getPrivateProjects()`/`getPrivateProject()`), and page template
 (shares `ProjectDetail.astro` with `/portfolio/[slug]`) are all in place.
-No private projects exist in Sanity yet, so it currently builds zero
-pages, same as every other dynamic route does when its underlying content
-is empty — nothing left to do here until there's actually something to
-mark `private: true` and publish. The two Worker secrets
-(`PRIVATE_ACCESS_PASSWORD`, `PRIVATE_ACCESS_SECRET`) still need to be set
-against the live Worker before the gate does anything in production — see
-"Protected pages" for the exact commands.
+Both Worker secrets are set and the gate is live in production; Christ
+Church is currently the one project marked `private: true` and published,
+reachable at `/private/christ-church` behind the real password.
 
 **Gotcha, confirmed the hard way:** Sanity content going live requires both
 publishing in the Studio *and* a manual rebuild+redeploy of the main site
@@ -552,3 +606,8 @@ publishing in the Studio *and* a manual rebuild+redeploy of the main site
 does not touch the live site. cillianloftus.com was found serving a build
 with zero projects/drawings baked in (the deployed `dist` predated the
 current Sanity content) until this was caught and redeployed.
+
+Search (see "Search" under Key Features) is wired in — Pagefind indexing
+four pages (writing entries, public portfolio projects, `/cv`,
+`/colophon`), a header icon opening a native `<dialog>` with results
+styled to match the rest of the site.

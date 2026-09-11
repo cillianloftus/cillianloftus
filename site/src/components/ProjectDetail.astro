@@ -8,9 +8,15 @@ interface Props {
 	project: Project;
 	eyebrowLabel: string;
 	eyebrowHref?: string;
+	/** Opts this project into Pagefind's search index — only ever set from
+	 * the public `/portfolio/[slug]` route, never from `/private/[slug]`
+	 * (see astro.config.mjs's sitemap filter and Base's `noindex` prop for
+	 * the same exclusion, done for the same reason: content that's meant
+	 * to be password-gated has no business being reachable another way). */
+	indexable?: boolean;
 }
 
-const { project, eyebrowLabel, eyebrowHref } = Astro.props;
+const { project, eyebrowLabel, eyebrowHref, indexable = false } = Astro.props;
 const descriptionHtml = portableTextToHtml(project.description);
 const restDrawings = (project.drawings ?? []).slice(1);
 const typeLabels = projectTypeLabels(project.type);
@@ -22,12 +28,12 @@ function sizesAttrFor(size: string | undefined) {
 }
 ---
 
-<article class="project-page">
+<article class="project-page" data-pagefind-body={indexable || undefined}>
 	<header>
 		<p class="eyebrow">
 			{eyebrowHref ? <a href={eyebrowHref}>{eyebrowLabel}</a> : eyebrowLabel}
 		</p>
-		<h1>{project.title}</h1>
+		<h1 data-pagefind-meta="title">{project.title}</h1>
 		<p class="project-meta">
 			{typeLabels} &middot; {project.date?.slice(0, 4)} &middot; {project.location}
 			{project.role && <> &middot; {project.role}</>}

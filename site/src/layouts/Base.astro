@@ -1,6 +1,7 @@
 ---
 import { ClientRouter } from 'astro:transitions';
 import Icon, { type IconName } from '../components/icons/Icon.astro';
+import Search from '../components/Search.astro';
 import { getSiteSettings, sanityConfigured } from '../lib/sanity';
 import { jsonLd } from '../lib/seo';
 import '@fontsource/ibm-plex-sans/300.css';
@@ -127,6 +128,7 @@ const personSchema = {
 					<Icon name="sun" size={20} class="icon-sun" />
 					<Icon name="moon" size={20} class="icon-moon" />
 				</button>
+				<Search />
 				{!isHome && (
 					<nav aria-label="Primary">
 						<ul class="nav-links-desktop">
