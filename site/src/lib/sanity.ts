@@ -110,6 +110,32 @@ export async function getProject(slug: string): Promise<Project | null> {
 	);
 }
 
+/** Mirrors getProjects()/getProject(), but for the password-gated
+ * counterpart: only documents with `private == true`. The pages built from
+ * these (`/private/[slug]`) are additionally kept out of search results via
+ * Base's `noindex` prop and the sitemap's filter, on top of the password
+ * gate itself (`worker/index.ts`) — the query-level split here only keeps
+ * this content out of the public `/portfolio` pages and RSS/sitemap builds,
+ * it isn't what actually protects it. */
+export async function getPrivateProjects(): Promise<Project[]> {
+	return getClient().fetch(/* groq */ `
+		*[_type == "project" && private == true] | order(date desc) {
+			${projectFields}
+		}
+	`);
+}
+
+export async function getPrivateProject(slug: string): Promise<Project | null> {
+	return getClient().fetch(
+		/* groq */ `
+			*[_type == "project" && slug.current == $slug && private == true][0] {
+				${projectFields}
+			}
+		`,
+		{ slug },
+	);
+}
+
 export async function getDrawings(): Promise<StandaloneDrawing[]> {
 	return getClient().fetch(/* groq */ `
 		*[_type == "drawing"] {

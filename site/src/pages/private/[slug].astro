@@ -1,0 +1,23 @@
+---
+import Base from '../../layouts/Base.astro';
+import ProjectDetail from '../../components/ProjectDetail.astro';
+import Lightbox from '../../components/Lightbox.astro';
+import { getPrivateProjects, sanityConfigured } from '../../lib/sanity';
+import { projectTypeLabels } from '../../lib/types';
+
+export async function getStaticPaths() {
+	const projects = sanityConfigured ? await getPrivateProjects() : [];
+	return projects.map((project) => ({
+		params: { slug: project.slug },
+		props: { project },
+	}));
+}
+
+const { project } = Astro.props;
+const typeLabels = projectTypeLabels(project.type);
+---
+
+<Base title={`${project.title} · Cillian Loftus`} description={typeLabels} noindex>
+	<ProjectDetail project={project} eyebrowLabel="Private" />
+	<Lightbox />
+</Base>

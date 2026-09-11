@@ -1,5 +1,7 @@
 {
   "extends": "astro/tsconfigs/strict",
   "include": [".astro/types.d.ts", "**/*"],
-  "exclude": ["dist"]
+  // worker/ has its own tsconfig.json (Cloudflare Workers runtime types,
+  // e.g. Fetcher/ExportedHandler, conflict with this project's DOM lib).
+  "exclude": ["dist", "worker"]
 }

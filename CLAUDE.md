@@ -24,7 +24,12 @@ as much as the visual result.
   workflow (`.github/workflows/deploy.yml`), triggered by a Sanity webhook
   on every publish/unpublish — not by `git push`, which does nothing on
   its own. The Studio still deploys manually. Domain registered at
-  Hostinger, nameservers moved to Cloudflare.
+  Hostinger, nameservers moved to Cloudflare. The main site is otherwise
+  pure static assets with zero Worker code — the one exception is
+  `site/worker/index.ts`, a small Worker that only runs in front of
+  `/private/*` (via `assets.run_worker_first` in `wrangler.jsonc`) to check
+  a password before falling through to the same static assets everything
+  else serves from directly. See "Protected pages" below.
 - **Python** — used only for local image processing scripts (PyMuPDF).
   Not part of the site build.
 
@@ -40,6 +45,8 @@ site/                        → cillianloftus.com
     lib/                     sanity.ts, image.ts, types.ts
     styles/global.css
   public/
+  worker/                    index.ts — the one Worker script on the site,
+                             gates /private/* only (see Key Features)
 studio/                      → studio.cillianloftus.com
   schemas/
   sanity.config.ts
@@ -271,8 +278,64 @@ real phone, not just automated checks.
 **View Transitions** — enabled. Project thumbnails should morph into the full
 project page. High priority; this is the main visual flourish on the site.
 
-**Protected pages** — Cloudflare Access rule on `/private/*`, or a shared
-password via a Pages Function. Never client-side password checks.
+**Protected pages** (`/private/[slug]`) — a single shared password for the
+whole section, not per-person access (Cloudflare Access was the other
+option; ruled out since this isn't gated for specific known people, just
+kept off search and out of casual reach). Enforced server-side in
+`site/worker/index.ts`, the one piece of actual Worker code on an
+otherwise pure-static-assets site — never a client-side check, which
+would just be reading the page source with extra steps. Wired in via
+`wrangler.jsonc`'s `assets.run_worker_first: ["/private/*"]`, so every
+other path is untouched, served straight from static assets with no
+Worker invoked at all.
+
+On a request to `/private/*`: a valid session cookie (`private_auth`,
+`HttpOnly; Secure; SameSite=Lax`, 30-day expiry) lets it through to
+`env.ASSETS.fetch()` same as any other page; otherwise it serves a small
+self-contained login form (styled inline, matching the site's own color
+tokens, since the Worker can't import `global.css`). Submitting the
+correct password sets that cookie (a timestamp + HMAC-SHA256 signature
+over it, keyed by a secret that's separate from the password itself, via
+Web Crypto's `crypto.subtle` — verified constant-time on both the password
+comparison and the signature check, so neither can be narrowed down by
+timing) and redirects back to whichever `/private/*` path was originally
+requested. Wrong password, tampered/expired/malformed cookie, or a
+misconfigured deploy (missing secrets) all fail closed.
+
+The content-model side was already there (`project.private`,
+`getPrivateProjects()`/`getPrivateProject()` in `sanity.ts`, mirroring the
+public `getProjects()`/`getProject()` but filtering `private == true`
+instead of excluding it) — `/private/[slug].astro` renders through the
+same `ProjectDetail.astro` component `/portfolio/[slug]` does (extracted
+from what used to be portfolio-page-only markup, so the two don't
+duplicate the hero/description/masonry-grid/lightbox wiring), just with
+`Base`'s `noindex` prop set and no `CreativeWork` JSON-LD — a password
+gate that's still fully indexed by Google would defeat its own point. The
+sitemap (`astro.config.mjs`) filters `/private/` out for the same reason.
+
+Two secrets have to be set against the live Worker before this does
+anything — `PRIVATE_ACCESS_PASSWORD` (what a visitor types in) and
+`PRIVATE_ACCESS_SECRET` (signs the session cookie, never typed by anyone).
+Set them from `site/` with `npx wrangler secret put PRIVATE_ACCESS_PASSWORD`
+and `npx wrangler secret put PRIVATE_ACCESS_SECRET` — each prompts
+interactively and the value never touches the repo, a commit, or the
+GitHub Actions workflow (those only need `CLOUDFLARE_API_TOKEN`/
+`CLOUDFLARE_ACCOUNT_ID` to deploy, same as before; secrets set this way
+persist on the Worker across every future deploy without being re-sent).
+Until both are set, `/private/*` responds `503` rather than either
+crashing or — worse — accidentally passing everyone through.
+
+Local testing needs `wrangler dev` (or `wrangler dev --remote`), not
+`astro dev` — the password gate is Worker code, and Astro's own dev server
+doesn't run Workers at all, so `/private/*` behaves like any other route
+in `npm run dev` regardless of the gate. `wrangler dev` reads secrets from
+a local `.dev.vars` file (gitignored; `.dev.vars.example` in the repo
+shows the two keys it needs) rather than the real Cloudflare-side secrets.
+One local-only quirk hit while building this: `wrangler dev` serves over
+plain `http://`, so a cookie flagged `Secure` (correctly) won't be sent
+back by a real browser or `curl`'s cookie jar — a false "not logged in"
+that only happens locally, not in production, where the site is always
+HTTPS.
 
 ## Conventions
 
@@ -324,8 +387,6 @@ password via a Pages Function. Never client-side password checks.
 
 ## Not yet decided
 
-- Whether protected pages need per-person access (Cloudflare Access) or a
-  single shared section password.
 - CV as structured data rendering to both web and PDF, versus simply
   uploading a PDF. Start with the PDF.
 - Pagefind search — worth adding once the writing archive has volume.
@@ -457,14 +518,20 @@ RSS `<link>` in every page's `<head>` used to point at a 404 (the file
 didn't exist despite being documented as a route and being the stated
 reason a newsletter was ruled out). `astro.config.mjs` now sets `site:
 'https://cillianloftus.com'`, which the sitemap integration needs for
-absolute URLs. `public/robots.txt` added, pointing at the sitemap. None of
-this excludes `/private/*` yet since that route doesn't exist — when it's
-built, the sitemap config needs a `filter` added so a password-protected
-page doesn't end up publicly listed regardless of the page itself being
-gated.
+absolute URLs. `public/robots.txt` added, pointing at the sitemap. The
+sitemap config's `filter` excludes anything under `/private/`, same reason
+that route gets `noindex` — see "Protected pages" above.
 
-Still to do: `/private/[slug]` (deliberately backburnered — no private
-content exists yet, see the project's own build-status notes for why).
+`/private/[slug]` is built — password gate (`worker/index.ts`), content
+query (`getPrivateProjects()`/`getPrivateProject()`), and page template
+(shares `ProjectDetail.astro` with `/portfolio/[slug]`) are all in place.
+No private projects exist in Sanity yet, so it currently builds zero
+pages, same as every other dynamic route does when its underlying content
+is empty — nothing left to do here until there's actually something to
+mark `private: true` and publish. The two Worker secrets
+(`PRIVATE_ACCESS_PASSWORD`, `PRIVATE_ACCESS_SECRET`) still need to be set
+against the live Worker before the gate does anything in production — see
+"Protected pages" for the exact commands.
 
 **Gotcha, confirmed the hard way:** Sanity content going live requires both
 publishing in the Studio *and* a manual rebuild+redeploy of the main site

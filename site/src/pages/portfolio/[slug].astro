@@ -1,8 +1,8 @@
 ---
 import Base from '../../layouts/Base.astro';
-import DrawingImage from '../../components/DrawingImage.astro';
+import ProjectDetail from '../../components/ProjectDetail.astro';
 import Lightbox from '../../components/Lightbox.astro';
-import { getProjects, portableTextToHtml, sanityConfigured, urlFor } from '../../lib/sanity';
+import { getProjects, sanityConfigured, urlFor } from '../../lib/sanity';
 import { projectTypeLabels } from '../../lib/types';
 import { jsonLd } from '../../lib/seo';
 
@@ -15,8 +15,6 @@ export async function getStaticPaths() {
 }
 
 const { project } = Astro.props;
-const descriptionHtml = portableTextToHtml(project.description);
-const restDrawings = (project.drawings ?? []).slice(1);
 const ogImage = project.drawings?.[0]
 	? urlFor(project.drawings[0].image).width(1200).height(630).fit('crop').auto('format').url()
 	: undefined;
@@ -33,216 +31,10 @@ const projectSchema = {
 	genre: typeLabels || undefined,
 	locationCreated: project.location ? { '@type': 'Place', name: project.location } : undefined,
 };
-
-function sizesAttrFor(size: string | undefined) {
-	if (size === 'full') return '100vw';
-	if (size === 'large') return '(min-width: 900px) 66vw, 100vw';
-	return '(min-width: 900px) 33vw, (min-width: 600px) 50vw, 100vw';
-}
 ---
 
 <Base title={`${project.title} · Cillian Loftus`} description={typeLabels} ogImage={ogImage}>
 	<script type="application/ld+json" set:html={jsonLd(projectSchema)} is:inline />
-	<article class="project-page">
-		<header>
-			<p class="eyebrow">
-				<a href="/portfolio">Portfolio</a>
-			</p>
-			<h1>{project.title}</h1>
-			<p class="project-meta">
-				{typeLabels} &middot; {project.date?.slice(0, 4)} &middot; {project.location}
-				{project.role && <> &middot; {project.role}</>}
-			</p>
-		</header>
-
-		{project.drawings?.[0] && (
-			<div class="hero-thumb" transition:name={`project-image-${project.slug}`}>
-				<DrawingImage drawing={project.drawings[0]} sizes="100vw" maxHeight="min(60vh, 44rem)" lightbox priority />
-				<p class="caption">{project.drawings[0].caption}</p>
-			</div>
-		)}
-
-		{descriptionHtml && <div class="project-description" set:html={descriptionHtml} />}
-
-		{restDrawings.length > 0 && (
-			<ul class="drawing-list">
-				{
-					restDrawings.map((drawing) => (
-						<li class="drawing-item" data-size={drawing.size || 'normal'}>
-							<DrawingImage drawing={drawing} sizes={sizesAttrFor(drawing.size)} lightbox />
-							<p class="caption">{drawing.caption}</p>
-						</li>
-					))
-				}
-			</ul>
-		)}
-	</article>
-
+	<ProjectDetail project={project} eyebrowLabel="Portfolio" eyebrowHref="/portfolio" />
 	<Lightbox />
 </Base>
-
-<script is:inline>
-	function initDrawingMasonry() {
-		var list = document.querySelector('.project-page .drawing-list');
-		if (!list) return;
-
-		var items = Array.prototype.slice.call(list.querySelectorAll('.drawing-item'));
-		var GAP = 24;
-
-		function columnsFor(width) {
-			if (width >= 900) return 3;
-			if (width >= 600) return 2;
-			return 1;
-		}
-
-		function layoutMasonry() {
-			var containerWidth = list.clientWidth;
-			var columns = columnsFor(containerWidth);
-
-			if (columns <= 1) {
-				list.style.height = '';
-				items.forEach((item) => {
-					item.style.position = '';
-					item.style.width = '';
-					item.style.left = '';
-					item.style.top = '';
-					item.style.marginBottom = '';
-				});
-				list.classList.remove('masonry-active');
-				return;
-			}
-
-			list.classList.add('masonry-active');
-			var colWidth = (containerWidth - GAP * (columns - 1)) / columns;
-			var colHeights = new Array(columns).fill(0);
-
-			function shortestStart(span) {
-				var bestStart = 0;
-				var bestHeight = Infinity;
-				for (var start = 0; start <= columns - span; start++) {
-					var windowHeight = Math.max.apply(null, colHeights.slice(start, start + span));
-					if (windowHeight < bestHeight) {
-						bestHeight = windowHeight;
-						bestStart = start;
-					}
-				}
-				return bestStart;
-			}
-
-			// 'full' always spans every column currently on screen, not a fixed
-			// number, so it stays full-width whether that's 3 columns or 1.
-			function spanFor(size) {
-				if (size === 'full') return columns;
-				if (size === 'large') return Math.min(2, columns);
-				return 1;
-			}
-
-			items.forEach((item) => {
-				var span = spanFor(item.dataset.size);
-				var startCol = shortestStart(span);
-				var width = colWidth * span + GAP * (span - 1);
-
-				item.style.marginBottom = '0';
-				item.style.position = 'absolute';
-				item.style.width = width + 'px';
-				item.style.left = startCol * (colWidth + GAP) + 'px';
-
-				var top = Math.max.apply(null, colHeights.slice(startCol, startCol + span));
-				item.style.top = top + 'px';
-
-				var height = item.offsetHeight;
-				var newBottom = top + height + GAP;
-				for (var i = startCol; i < startCol + span; i++) colHeights[i] = newBottom;
-			});
-
-			list.style.height = Math.max.apply(null, colHeights) - GAP + 'px';
-		}
-
-		var resizeTimer;
-		window.addEventListener('resize', () => {
-			clearTimeout(resizeTimer);
-			resizeTimer = setTimeout(layoutMasonry, 150);
-		});
-
-		layoutMasonry();
-	}
-
-	initDrawingMasonry();
-	document.addEventListener('astro:after-swap', initDrawingMasonry);
-</script>
-
-<style>
-	.project-page {
-		padding-block: var(--space-5);
-		display: flex;
-		flex-direction: column;
-		gap: var(--space-4);
-	}
-
-	.hero-thumb {
-		display: flex;
-		flex-direction: column;
-		/* Shrink-wraps to the image's own rendered width (which the
-		   height-capped image now determines itself, see DrawingImage.astro)
-		   rather than stretching full-width, and align-self keeps it pinned
-		   left instead of being centered by .project-page's flex layout. */
-		width: fit-content;
-		max-width: 100%;
-		align-self: flex-start;
-	}
-
-	.eyebrow {
-		font-size: var(--step--1);
-		font-weight: 500;
-		text-transform: uppercase;
-		letter-spacing: 0.08em;
-		margin-bottom: var(--space-2);
-	}
-
-	.eyebrow a {
-		color: var(--color-text-muted);
-		text-decoration: none;
-	}
-
-	.eyebrow a:hover,
-	.eyebrow a:focus-visible {
-		color: var(--color-accent);
-	}
-
-	h1 {
-		font-size: var(--step-4);
-		font-weight: 500;
-		letter-spacing: -0.02em;
-		line-height: 1.05;
-		margin-bottom: var(--space-2);
-	}
-
-	.project-meta {
-		font-size: var(--step-0);
-		color: var(--color-text-muted);
-		margin-bottom: var(--space-2);
-	}
-
-	.project-description {
-		font-size: var(--step--1);
-		color: var(--color-text-muted);
-		max-width: 40rem;
-	}
-
-	.drawing-list {
-		position: relative;
-		display: flex;
-		flex-direction: column;
-		gap: var(--space-4);
-	}
-
-	.drawing-list.masonry-active {
-		display: block;
-	}
-
-	.caption {
-		font-size: var(--step--1);
-		color: var(--color-text-muted);
-		margin-top: var(--space-1);
-	}
-</style>

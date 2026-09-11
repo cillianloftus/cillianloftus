@@ -14,9 +14,12 @@ interface Props {
 	title: string;
 	description?: string;
 	ogImage?: string;
+	/** Password-gated pages (`/private/[slug]`) — kept out of search results
+	 * on top of, not instead of, the actual password gate. */
+	noindex?: boolean;
 }
 
-const { title, description, ogImage } = Astro.props;
+const { title, description, ogImage, noindex = false } = Astro.props;
 
 // Every page gets an og:image — most just fall back to this static default
 // (site name/tagline, matches the homepage's own copy) rather than sharing
@@ -102,6 +105,7 @@ const personSchema = {
 
 		<title>{title}</title>
 		{description && <meta name="description" content={description} />}
+		{noindex && <meta name="robots" content="noindex, nofollow" />}
 
 		<meta property="og:title" content={title} />
 		{description && <meta property="og:description" content={description} />}
