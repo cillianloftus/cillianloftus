@@ -291,16 +291,29 @@ Worker invoked at all.
 
 On a request to `/private/*`: a valid session cookie (`private_auth`,
 `HttpOnly; Secure; SameSite=Lax`, 30-day expiry) lets it through to
-`env.ASSETS.fetch()` same as any other page; otherwise it serves a small
-self-contained login form (styled inline, matching the site's own color
-tokens, since the Worker can't import `global.css`). Submitting the
-correct password sets that cookie (a timestamp + HMAC-SHA256 signature
-over it, keyed by a secret that's separate from the password itself, via
-Web Crypto's `crypto.subtle` — verified constant-time on both the password
-comparison and the signature check, so neither can be narrowed down by
-timing) and redirects back to whichever `/private/*` path was originally
-requested. Wrong password, tampered/expired/malformed cookie, or a
-misconfigured deploy (missing secrets) all fail closed.
+`env.ASSETS.fetch()` same as any other page; otherwise it serves a login
+form. Submitting the correct password sets that cookie (a timestamp +
+HMAC-SHA256 signature over it, keyed by a secret that's separate from the
+password itself, via Web Crypto's `crypto.subtle` — verified constant-time
+on both the password comparison and the signature check, so neither can be
+narrowed down by timing) and redirects back to whichever `/private/*` path
+was originally requested. Wrong password, tampered/expired/malformed
+cookie, or a misconfigured deploy (missing secrets) all fail closed.
+
+The login form's header and footer aren't a hand-copied approximation of
+the site's real ones — that was the first approach and it drifted almost
+immediately (stale color tokens out of sync with `global.css`, a header
+that briefly had no nav in it at all). Instead, `worker/index.ts` fetches
+`/chrome` via `env.ASSETS.fetch()` on every request and slices the real
+`<header>`/`<footer>`/stylesheet `<link>` out of it. `site/src/pages/
+chrome.astro` is what that fetches — `Base.astro` with nothing in the
+slot, built as an ordinary static page like any other (excluded from the
+sitemap, `noindex`'d, not meant to be visited directly), so its output is
+always whatever the real header/footer/CSS/webfont currently are, with
+nothing here to go stale. The only CSS actually hand-written in the Worker
+now is for the login form itself (`.private-gate` and its children); it
+relies on the fetched stylesheet for every color token, spacing value,
+and the real IBM Plex Sans webfont rather than redefining any of them.
 
 The content-model side was already there (`project.private`,
 `getPrivateProjects()`/`getPrivateProject()` in `sanity.ts`, mirroring the

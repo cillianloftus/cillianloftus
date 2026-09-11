@@ -1,0 +1,12 @@
+---
+import Base from '../layouts/Base.astro';
+// Not a real page — just Base.astro with nothing in the slot. Built like
+// any other static page, then fetched at request time by worker/index.ts
+// (via env.ASSETS.fetch) so the private-page login form can splice in the
+// *actual* rendered header/footer/CSS rather than a hand-maintained copy
+// of them. Keeping a second copy of the header/footer in sync by hand was
+// the previous approach and it drifted (stale color tokens, missing nav) —
+// this way there's only ever one source for what they look like.
+---
+
+<Base title="Cillian Loftus" noindex></Base>
