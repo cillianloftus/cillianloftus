@@ -18,8 +18,13 @@ as much as the visual result.
   Studio is a separate deployment.
 - **CSS** — plain modern CSS. Scoped `<style>` blocks per component,
   global tokens in `src/styles/global.css`. No Tailwind, no CSS-in-JS.
-- **Cloudflare Pages** — hosting for both site and studio. Deploys on push
-  to `main`. Domain registered at Hostinger, nameservers moved to Cloudflare.
+- **Cloudflare Workers (static assets)** — hosting for both site and
+  studio, deployed via `wrangler deploy` from each project's own folder,
+  not Cloudflare Pages. The main site auto-deploys via a GitHub Actions
+  workflow (`.github/workflows/deploy.yml`), triggered by a Sanity webhook
+  on every publish/unpublish — not by `git push`, which does nothing on
+  its own. The Studio still deploys manually. Domain registered at
+  Hostinger, nameservers moved to Cloudflare.
 - **Python** — used only for local image processing scripts (PyMuPDF).
   Not part of the site build.
 
@@ -327,10 +332,17 @@ password via a Pages Function. Never client-side password checks.
 
 ## Gotchas
 
-- Publishing in Sanity does **not** trigger a rebuild. Deploys are manual
-  (`npm run build && npx wrangler deploy` from `site/`), so a Sanity edit
-  only reaches the live site once you rebuild and redeploy — no CI/webhook
-  is wired up.
+- ~~Publishing in Sanity does not trigger a rebuild~~ — **fixed.** A Sanity
+  webhook (filtered to real publishes/unpublishes only, not every draft
+  autosave — see the webhook's GROQ filter in Sanity's project settings)
+  triggers a GitHub Actions workflow that runs the exact same
+  `npm run build && npx wrangler deploy` automatically. Verified working
+  both directions: publishing and unpublishing a project both reached the
+  live site within about a minute, with no manual step. `workflow_dispatch`
+  is also enabled on the same workflow, so a deploy can still be triggered
+  by hand from GitHub's Actions tab if needed (e.g. after a code change
+  that isn't itself a Sanity edit). The Studio's own deploy is still
+  manual — this only automates the main site.
 - In dev, plain pages refetch Sanity on every request (the client uses
   `useCdn: false` outside production, specifically so this works without a
   restart). Pages using `getStaticPaths` (`portfolio/[slug]`,
