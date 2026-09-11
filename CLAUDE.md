@@ -393,7 +393,12 @@ total height stays minimal without reordering by height the way CSS
 multi-column would. `size` on `projectDrawing`/`drawing` picks how many
 columns: normal (1), large (2), full (all current columns — converges with
 large at the 2-column breakpoint, and with normal at 1 column). Re-runs on
-filter changes and window resize.
+filter changes and window resize. Standalone `drawing` documents' `size`
+is fetched via GROQ same as project drawings — it wasn't for a while (the
+query had a stray `fullWidth` field left over instead, which doesn't exist
+on the schema and always returned `undefined`), so every standalone
+drawing silently rendered at `normal` span regardless of what was set in
+the Studio. Fixed in `getDrawings()` in `sanity.ts`.
 
 The Portfolio project page: hero (first drawing, capped height, left-aligned)
 above a short prose description (`project.description`, plain rich text —

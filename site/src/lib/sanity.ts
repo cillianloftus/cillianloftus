@@ -119,7 +119,7 @@ export async function getDrawings(): Promise<StandaloneDrawing[]> {
 			date,
 			projection,
 			medium,
-			fullWidth,
+			size,
 		}
 	`);
 }
