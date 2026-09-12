@@ -80,7 +80,10 @@ scripts/
 - **projection** — required, multi-select: plan, section, elevation,
   axonometric, perspective, detail
 - **medium** — optional, multi-select: sketch, hand-drawing, cad, render,
-  model-photo, collage
+  model-photo, photography, collage. `photography` is for straight
+  documentary/existing-condition shots (a site survey, a stitched existing
+  elevation) — distinct from `model-photo`, which is specifically a photo
+  of a physical study model.
 - **size** — normal (1 column) | large (2 columns) | full (however many
   columns the current breakpoint shows, so it's always full-width). "Full"
   isn't a fixed span — at the 2-column breakpoint it converges with

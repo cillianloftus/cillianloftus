@@ -3,7 +3,7 @@ import type { SanityImageSource } from '@sanity/image-url';
 
 export type Projection = 'plan' | 'section' | 'elevation' | 'axonometric' | 'perspective' | 'detail';
 
-export type Medium = 'sketch' | 'hand-drawing' | 'cad' | 'render' | 'model-photo' | 'collage';
+export type Medium = 'sketch' | 'hand-drawing' | 'cad' | 'render' | 'model-photo' | 'photography' | 'collage';
 
 export type ProjectType =
 	| 'adaptive-reuse'
@@ -33,6 +33,7 @@ export const MEDIUMS: { value: Medium; label: string }[] = [
 	{ value: 'cad', label: 'CAD' },
 	{ value: 'render', label: 'Render' },
 	{ value: 'model-photo', label: 'Model Photo' },
+	{ value: 'photography', label: 'Photography' },
 	{ value: 'collage', label: 'Collage' },
 ];
 

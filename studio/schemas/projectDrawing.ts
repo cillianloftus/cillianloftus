@@ -15,6 +15,7 @@ const MEDIUMS = [
 	{ title: 'CAD', value: 'cad' },
 	{ title: 'Render', value: 'render' },
 	{ title: 'Model Photo', value: 'model-photo' },
+	{ title: 'Photography', value: 'photography' },
 	{ title: 'Collage', value: 'collage' },
 ];
 
