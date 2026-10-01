@@ -99,14 +99,44 @@ Same fields as `projectDrawing` (image, caption, alt, projection, medium,
 size), plus its own **date** — required, since it has no parent project
 to inherit one from. For drawings that aren't part of any studio project;
 the `/drawings` index merges these with project drawings. No project link
-in their caption, since there's no project to link to.
+in their caption, since there's no project to link to, unless
+**relatedWriting** is set (optional, a reference to a `writing` document):
+a standalone drawing made for a piece of writing credits back to it in its
+`/drawings` caption instead, the same way a project drawing credits its
+project, just via `/writing/[slug]` rather than `/portfolio/[slug]`.
+
+Unlike `projectDrawing`, **projection** is optional here, not required: a
+standalone drawing isn't always an architectural representation at all (a
+map, a chart, a diagram made for a piece of writing has no real projection
+to assign it), so forcing one onto a non-architectural image would be a
+category error, not a shortcut.
 
 ### `writing`
 - title, slug, date, category (article | poetry | dissertation)
 - body (rich text), optional PDF attachment
+- **references**: optional array of `{image, caption, alt, sourceCredit,
+  sourceUrl}`. For images that support the piece but aren't the author's
+  own work: a cited photo or figure, not an illustration. Rendered as its
+  own clearly-labeled, clearly-credited section on the entry page, outside
+  both the body prose and `/drawings`, never implied as the author's own.
+  Diagrams/maps/photographs the author *did* make themselves go in as a
+  standalone `drawing` instead, with that drawing's own `relatedWriting`
+  pointing back here, since those belong on the drawings index and these
+  explicitly don't.
 - draft (boolean) — excluded from build
 
 Articles and poetry share this type. Do not split into separate types.
+
+### `photo` (document, standalone)
+Personal photography: image, optional caption, optional alt (falls back to
+caption), optional location, date (required, sorts `/photography` newest
+first). Its own section, deliberately kept separate from the architecture
+portfolio rather than mixed into `/drawings`: a personal travel photo
+isn't studio work, and `/drawings` is framed as exactly that. No
+projection/medium/size: those are architecture-specific (or, for size,
+masonry-specific) concepts this type has no use for; `/photography` uses a
+plain responsive grid rather than the hand-rolled masonry `/drawings` and
+project pages use.
 
 ### `siteSettings`
 Bio, contact details, CV file. Nothing in this category should be hardcoded.
@@ -123,6 +153,7 @@ Settled — changing these later means redirects.
 /drawings                    filterable index of all drawings
 /writing                     writing index
 /writing/[slug]              includes the dissertation (how-much-does-a-cloud-weigh)
+/photography                 personal photography, separate from the portfolio
 /colophon
 /private/[slug]              password-protected work
 /404
@@ -460,6 +491,58 @@ the source to wrap in the first place. This is the standard workaround for
 this exact problem across Vite-based static site generators generally,
 not something specific to this project.
 
+**Reference images on writing entries, and a separate photography
+section**: three related pieces, all addressing the same underlying ask,
+that writing needs images too, but not all images belong in the same
+place. A `writing` entry's own research graphics (a map, a chart, a
+diagram the author made) go in as a standalone `drawing` with its
+`relatedWriting` field pointing back to the entry, since they're the
+author's own work, so they belong on `/drawings` like anything else
+there, and the drawings index credits them back to the article the same
+way a project drawing credits its project. Images that support a piece
+but *aren't* the author's own work (a cited photo or figure) go in as
+that entry's own `references` array instead, rendered as a distinct,
+clearly-labeled section on the entry page (`.references`, below the body,
+above the PDF link), each one credited and linked to its original source,
+deliberately never implied as the author's own and deliberately excluded
+from `/drawings` for the same reason. Reference images reuse
+`DrawingImage.astro` and the site's one `Lightbox` instance directly (same
+CDN `srcset`, same hotspot-aware crop, same zoom/swipe), the first time
+either has been wired into a writing page, since the component only ever
+touches `image`/`caption`/`alt`, nothing architecture-specific, so a
+reference object satisfies its prop type without any changes to the
+component itself.
+
+Personal photography (travel photos, nothing to do with the portfolio)
+got its own document type and its own section, `/photography`, rather
+than being folded into `/drawings` via the `photography` medium tag,
+deliberately: `/drawings` is framed as studio work, and a personal photo
+isn't that, even though the plumbing to tag it that way already existed.
+`photo` has no projection, medium, or size (those are architecture, or
+for size masonry-layout, concepts this type has no use for), so the page
+is a plain responsive grid (1/2/3 columns by breakpoint), not the
+hand-rolled masonry `/drawings` and project pages use.
+
+Because `projection` was required on standalone `drawing` documents before
+this (a project drawing's `projection` still is, it's always a real
+architectural drawing), making it optional needed two follow-up fixes
+where code assumed it would always be an array: `drawings.astro`'s
+`data-projection` attribute and its projection-pill counts, both now
+guarded (`drawing.projection ?? []` / `?.includes`), caught by `astro
+check` once `Drawing.projection` became `Projection[] | undefined` in
+`types.ts` rather than by inspection.
+
+Verified end to end before any real content existed for any of this:
+`getDrawings`/`getPhotos`/`getWritingEntries` were temporarily patched to
+splice in test data built from a real, already-uploaded Sanity asset (so
+real CDN URLs actually resolved), the site built and served via `astro
+preview`, then driven with Playwright: clicking a reference image and a
+photography-grid image each confirmed to actually open the real Lightbox
+with the right caption, the drawings-index backlink confirmed to render
+with the right href and label, light and dark mode both checked. All test
+data and the temporary patches were removed afterward; none of it ever
+reached Sanity or a commit.
+
 ## Conventions
 
 - Mobile-first CSS. `clamp()` for type scale, `auto-fill` grids over media
@@ -679,3 +762,13 @@ View-Transitions hero-morph into `/portfolio/[slug]` still works whichever
 page you navigate from — confirmed by comparing the computed
 `viewTransitionName` on both ends of a real navigation, not just by
 inspecting the markup.
+
+`/photography` is built (see "Reference images... and a separate
+photography section" under Key Features): a new `photo` document type, a
+plain responsive grid, the same `DrawingImage`/`Lightbox` pair every other
+image-heavy page on the site uses. Writing entries can now carry a
+`references` array (images that aren't the author's own, credited and
+linked to their source, kept off `/drawings`) and standalone drawings can
+link back to the writing entry they illustrate via `relatedWriting`. No
+real content in any of the three yet, all verified against temporarily
+patched-in test data before being reverted, nothing live in Sanity.

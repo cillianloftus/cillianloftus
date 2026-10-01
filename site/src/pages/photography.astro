@@ -1,0 +1,92 @@
+---
+import Base from '../layouts/Base.astro';
+import DrawingImage from '../components/DrawingImage.astro';
+import Lightbox from '../components/Lightbox.astro';
+import { getPhotos, sanityConfigured } from '../lib/sanity';
+
+const photos = sanityConfigured ? await getPhotos() : [];
+// DrawingImage requires a real caption string: it builds the lightbox
+// trigger's aria-label straight from drawing.caption, and Photo.caption is
+// deliberately optional (not every photo needs one). displayCaption keeps
+// the real, possibly-absent value for the visible text below the image;
+// caption is only ever the safe fallback fed to DrawingImage, so a
+// captionless photo never reaches it as the literal string "undefined".
+const photoItems = photos.map((photo) => ({
+	...photo,
+	displayCaption: photo.caption,
+	caption: photo.caption || photo.location || 'Photograph',
+}));
+---
+
+<Base title="Photography · Cillian Loftus" description="Personal photography, mostly travel.">
+	<section class="photography-page" data-pagefind-body>
+		<header>
+			<p class="eyebrow">Photography</p>
+			<h1 data-pagefind-meta="title">A few photographs.</h1>
+		</header>
+
+		<ul class="photo-grid">
+			{
+				photoItems.map((photo) => (
+					<li>
+						<DrawingImage drawing={photo} sizes="(min-width: 700px) 33vw, 50vw" lightbox />
+						{(photo.displayCaption || photo.location) && (
+							<p class="photo-caption">{[photo.displayCaption, photo.location].filter(Boolean).join(' · ')}</p>
+						)}
+					</li>
+				))
+			}
+		</ul>
+	</section>
+
+	<Lightbox />
+</Base>
+
+<style>
+	.photography-page {
+		padding-block: var(--space-5);
+		display: flex;
+		flex-direction: column;
+		gap: var(--space-4);
+	}
+
+	.eyebrow {
+		font-size: var(--step--1);
+		font-weight: 500;
+		text-transform: uppercase;
+		letter-spacing: 0.08em;
+		color: var(--color-text-muted);
+		margin-bottom: var(--space-2);
+	}
+
+	h1 {
+		font-size: var(--step-4);
+		font-weight: 500;
+		letter-spacing: -0.02em;
+		line-height: 1.05;
+	}
+
+	.photo-grid {
+		display: grid;
+		grid-template-columns: 1fr;
+		gap: var(--space-3);
+	}
+
+	@media (min-width: 480px) {
+		.photo-grid {
+			grid-template-columns: repeat(2, 1fr);
+		}
+	}
+
+	@media (min-width: 900px) {
+		.photo-grid {
+			grid-template-columns: repeat(3, 1fr);
+		}
+	}
+
+	.photo-caption {
+		font-size: var(--step--1);
+		color: var(--color-text-muted);
+		margin-top: var(--space-1);
+	}
+</style>

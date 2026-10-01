@@ -15,6 +15,8 @@ const projectDrawings = projects.flatMap((project) =>
 		date: project.date,
 		projectSlug: project.slug,
 		projectTitle: project.title,
+		writingSlug: undefined,
+		writingTitle: undefined,
 	})),
 );
 
@@ -23,6 +25,8 @@ const looseDrawings = standaloneDrawings.map((drawing) => ({
 	year: drawing.date.slice(0, 4),
 	projectSlug: undefined,
 	projectTitle: undefined,
+	writingSlug: drawing.relatedWriting?.slug,
+	writingTitle: drawing.relatedWriting?.title,
 }));
 
 const allDrawings = [...projectDrawings, ...looseDrawings].sort((a, b) =>
@@ -34,7 +38,7 @@ const YEARS = Array.from(new Set(allDrawings.map((d) => d.year)))
 	.map((year) => ({ value: year, label: year }));
 
 const projectionCounts = Object.fromEntries(
-	PROJECTIONS.map((p) => [p.value, allDrawings.filter((d) => d.projection.includes(p.value)).length]),
+	PROJECTIONS.map((p) => [p.value, allDrawings.filter((d) => d.projection?.includes(p.value)).length]),
 );
 const mediumCounts = Object.fromEntries(
 	MEDIUMS.map((m) => [m.value, allDrawings.filter((d) => d.medium?.includes(m.value)).length]),
@@ -93,7 +97,7 @@ function sizesAttrFor(size: string | undefined) {
 				allDrawings.map((drawing) => (
 					<li
 						class="drawing-item"
-						data-projection={drawing.projection.join(' ')}
+						data-projection={(drawing.projection ?? []).join(' ')}
 						data-medium={(drawing.medium ?? []).join(' ')}
 						data-year={drawing.year}
 						data-size={drawing.size || 'normal'}
@@ -105,6 +109,12 @@ function sizesAttrFor(size: string | undefined) {
 								<>
 									{' '}
 									&middot; <a href={`/portfolio/${drawing.projectSlug}`}>{drawing.projectTitle}</a>
+								</>
+							)}
+							{drawing.writingSlug && (
+								<>
+									{' '}
+									&middot; <a href={`/writing/${drawing.writingSlug}`}>{drawing.writingTitle}</a>
 								</>
 							)}
 						</p>

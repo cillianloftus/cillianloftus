@@ -55,11 +55,11 @@ export default defineType({
 		defineField({
 			name: 'projection',
 			title: 'Projection',
-			description: 'Multi-select. A section perspective is both a section and a perspective.',
+			description:
+				'Multi-select, optional. A section perspective is both a section and a perspective. Leave blank for drawings that are not architectural representations at all, e.g. a map or a chart made for a piece of writing.',
 			type: 'array',
 			of: [{ type: 'string' }],
 			options: { list: PROJECTIONS },
-			validation: (Rule) => Rule.required().min(1),
 		}),
 		defineField({
 			name: 'medium',
@@ -84,6 +84,14 @@ export default defineType({
 				layout: 'radio',
 			},
 			initialValue: 'normal',
+		}),
+		defineField({
+			name: 'relatedWriting',
+			title: 'Related writing',
+			description:
+				'Optional. If this drawing was made for (or illustrates) a piece of writing, link it here: the drawings index will credit it back to that piece, the same way a project drawing credits its project.',
+			type: 'reference',
+			to: [{ type: 'writing' }],
 		}),
 	],
 	preview: {

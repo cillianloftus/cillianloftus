@@ -68,13 +68,19 @@ export interface Drawing {
 	image: DrawingImage;
 	caption: string;
 	alt?: string;
-	projection: Projection[];
-	medium: Medium[];
+	/** Optional, not required: a non-architectural drawing (a map or chart
+	 * made for a piece of writing, say) often has no real projection at all. */
+	projection?: Projection[];
+	medium?: Medium[];
 	size?: DrawingSize;
 }
 
 export interface StandaloneDrawing extends Drawing {
 	date: string;
+	/** Set when this drawing was made for (or illustrates) a piece of
+	 * writing: mirrors how a project drawing credits back to its project,
+	 * just via an explicit reference instead of nesting. */
+	relatedWriting?: { slug: string; title: string };
 }
 
 export interface Project {
@@ -104,6 +110,17 @@ export interface SiteSettings {
 
 export type WritingCategory = 'article' | 'poetry' | 'dissertation';
 
+/** Supports a piece of writing but isn't the author's own work: a cited
+ * photo or figure, not an illustration. Always credited and linked back to
+ * its source; never rendered as a Drawing, which would imply authorship. */
+export interface WritingReference {
+	image: DrawingImage;
+	caption: string;
+	alt?: string;
+	sourceCredit: string;
+	sourceUrl: string;
+}
+
 export interface WritingEntry {
 	slug: string;
 	title: string;
@@ -112,4 +129,13 @@ export interface WritingEntry {
 	summary?: string;
 	body?: PortableTextBlock[];
 	pdf?: string;
+	references?: WritingReference[];
+}
+
+export interface Photo {
+	image: DrawingImage;
+	caption?: string;
+	alt?: string;
+	location?: string;
+	date: string;
 }

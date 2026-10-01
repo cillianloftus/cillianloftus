@@ -2,7 +2,7 @@ import { createClient, type SanityClient } from '@sanity/client';
 import { createImageUrlBuilder, type ImageUrlBuilder, type SanityImageSource } from '@sanity/image-url';
 import { toHTML } from '@portabletext/to-html';
 import type { PortableTextBlock } from '@portabletext/types';
-import type { Project, SiteSettings, StandaloneDrawing, WritingEntry } from './types';
+import type { Photo, Project, SiteSettings, StandaloneDrawing, WritingEntry } from './types';
 
 const projectId = import.meta.env.SANITY_PROJECT_ID;
 const dataset = import.meta.env.SANITY_DATASET || 'production';
@@ -146,6 +146,19 @@ export async function getDrawings(): Promise<StandaloneDrawing[]> {
 			projection,
 			medium,
 			size,
+			"relatedWriting": relatedWriting->{ title, "slug": slug.current },
+		}
+	`);
+}
+
+export async function getPhotos(): Promise<Photo[]> {
+	return getClient().fetch(/* groq */ `
+		*[_type == "photo"] | order(date desc) {
+			${drawingImageField},
+			caption,
+			alt,
+			location,
+			date,
 		}
 	`);
 }
@@ -158,6 +171,13 @@ const writingFields = /* groq */ `
 	summary,
 	body,
 	"pdf": pdf.asset->url,
+	references[]{
+		${drawingImageField},
+		caption,
+		alt,
+		sourceCredit,
+		sourceUrl,
+	},
 `;
 
 export async function getWritingEntries(): Promise<WritingEntry[]> {
