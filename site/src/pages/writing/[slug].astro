@@ -54,7 +54,11 @@ const bodyHtml = portableTextToHtml(entry.body);
 
 <style>
 	.writing-entry {
-		max-width: 40rem;
+		/* Narrower than the site's usual 40rem measure — this page is long-
+		   form continuous prose, not short UI copy, and 40rem read as too
+		   wide a line for comfortable pacing once real article text was in
+		   place (confirmed against the live page, not guessed at). */
+		max-width: 34rem;
 		padding-block: var(--space-5);
 		display: flex;
 		flex-direction: column;
@@ -95,9 +99,28 @@ const bodyHtml = portableTextToHtml(entry.body);
 
 	.entry-body {
 		font-size: var(--step-1);
+		/* 1.5 (the sitewide body default, inherited otherwise) reads fine for
+		   short UI copy but felt cramped across paragraphs this long and
+		   dense — more generous line-height gives each line more room to
+		   breathe without changing how much text is actually on the page. */
+		line-height: 1.65;
 		display: flex;
 		flex-direction: column;
-		gap: var(--space-3);
+		/* var(--space-3) (1.5rem) is the sitewide default for tightly related
+		   list-style content (nav rows, stack items) — too tight once real
+		   paragraphs averaging ~700 characters each were in place; this is
+		   long-form reading that wants real pauses between paragraphs, not
+		   list rhythm. */
+		gap: 2.25rem;
+	}
+
+	/* The opening paragraph reads larger, giving the piece a clear point of
+	   entry distinct from what follows — the same idea as the colophon's
+	   .lede treatment, just automatic here (there's no separate lede field
+	   in the schema, so this is simply the body's first real paragraph). */
+	.entry-body :global(p:first-child) {
+		font-size: var(--step-2);
+		line-height: 1.5;
 	}
 
 	/* Sanity's block editor allows H2/H3, blockquotes, bold/italic and lists
