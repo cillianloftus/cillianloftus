@@ -100,6 +100,76 @@ const bodyHtml = portableTextToHtml(entry.body);
 		gap: var(--space-3);
 	}
 
+	/* Sanity's block editor allows H2/H3, blockquotes, bold/italic and lists
+	   by default (the Studio schema just declares `{ type: 'block' }` with
+	   no restrictions) even though nothing had styled them here before —
+	   they'd have rendered in raw browser UA defaults, clashing with the
+	   rest of the site, the moment an entry actually used one. These target
+	   :global() because the HTML comes in via set:html — Astro's scoped
+	   data-astro-cid attribute only ever reaches elements present in this
+	   component's own template, never content injected at runtime (same
+	   reasoning as Search.astro's result styling). The outer flex gap above
+	   already gives every top-level block (p, h2, blockquote, ul...) equal
+	   spacing; a heading's own margin-top stacks on top of that rather than
+	   being collapsed by it, since flexbox never collapses child margins —
+	   which is what gives a heading more room above it than below, without
+	   having to restructure the layout to get asymmetric spacing. */
+	.entry-body :global(h2) {
+		margin-top: var(--space-2);
+		font-size: var(--step-2);
+		font-weight: 600;
+		letter-spacing: -0.01em;
+		line-height: 1.2;
+	}
+
+	.entry-body :global(h3) {
+		margin-top: var(--space-1);
+		font-size: var(--step-0);
+		font-weight: 600;
+		letter-spacing: -0.01em;
+		line-height: 1.3;
+	}
+
+	.entry-body :global(blockquote) {
+		padding-left: var(--space-3);
+		border-left: 2px solid var(--color-accent);
+		font-style: italic;
+		color: var(--color-text-muted);
+	}
+
+	.entry-body :global(strong) {
+		font-weight: 600;
+	}
+
+	.entry-body :global(ul),
+	.entry-body :global(ol) {
+		display: flex;
+		flex-direction: column;
+		gap: 0.4em;
+		padding-left: 1.3em;
+	}
+
+	.entry-body :global(a) {
+		color: inherit;
+		text-decoration: underline;
+		text-underline-offset: 0.15em;
+		transition: color 0.15s ease;
+	}
+
+	.entry-body :global(a:hover),
+	.entry-body :global(a:focus-visible) {
+		color: var(--color-accent);
+	}
+
+	/* The user's own stated priority for this page: deliberate line breaks
+	   and an enjoyable reading rhythm. text-wrap: pretty asks the browser to
+	   avoid leaving a single short orphaned word alone on a paragraph's last
+	   line — a no-op in browsers that don't support it yet, not a layout
+	   dependency. */
+	.entry-body :global(p) {
+		text-wrap: pretty;
+	}
+
 	.pdf-link a {
 		display: inline-flex;
 		align-items: center;
