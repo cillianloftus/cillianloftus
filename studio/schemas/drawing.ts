@@ -48,7 +48,7 @@ export default defineType({
 			name: 'date',
 			title: 'Date',
 			description:
-				'Project drawings inherit their date from the project; standalone drawings need their own. Used to sort the drawings index, newest first. The exact day rarely matters — pick any day in the right month.',
+				'Project drawings inherit their date from the project; standalone drawings need their own. Used to sort the drawings index, newest first. The exact day rarely matters, pick any day in the right month.',
 			type: 'date',
 			validation: (Rule) => Rule.required(),
 		}),

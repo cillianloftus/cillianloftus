@@ -4,7 +4,7 @@ export default defineType({
 	name: 'photo',
 	title: 'Photography',
 	type: 'document',
-	description: 'Personal photography, not tied to any project or piece of writing — its own section of the site, separate from the architecture portfolio.',
+	description: 'Personal photography, not tied to any project or piece of writing: its own section of the site, separate from the architecture portfolio.',
 	fields: [
 		defineField({
 			name: 'image',
@@ -16,7 +16,7 @@ export default defineType({
 		defineField({
 			name: 'caption',
 			title: 'Caption',
-			description: 'Optional — not every photo needs one.',
+			description: 'Optional, not every photo needs one.',
 			type: 'string',
 		}),
 		defineField({

@@ -8,7 +8,7 @@ interface Props {
 	project: Project;
 	eyebrowLabel: string;
 	eyebrowHref?: string;
-	/** Opts this project into Pagefind's search index — only ever set from
+	/** Opts this project into Pagefind's search index, only ever set from
 	 * the public `/portfolio/[slug]` route, never from `/private/[slug]`
 	 * (see astro.config.mjs's sitemap filter and Base's `noindex` prop for
 	 * the same exclusion, done for the same reason: content that's meant
@@ -65,7 +65,7 @@ function sizesAttrFor(size: string | undefined) {
 <script is:inline>
 	function initDrawingMasonry() {
 		// Re-runs on every astro:after-swap (client-side nav via View
-		// Transitions) — without removing the previous run's resize listener
+		// Transitions), without removing the previous run's resize listener
 		// first, repeat visits to project pages permanently accumulate one
 		// per visit, each closing over that visit's now-detached `list`/
 		// `items` (same fix as drawings.astro's initDrawingsFilter).

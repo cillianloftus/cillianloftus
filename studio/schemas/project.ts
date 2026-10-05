@@ -36,7 +36,7 @@ export default defineType({
 			name: 'date',
 			title: 'Date',
 			description:
-				'Used to sort drawings and projects chronologically (newest first) and as the displayed year. The exact day rarely matters — pick any day in the right month.',
+				'Used to sort drawings and projects chronologically (newest first) and as the displayed year. The exact day rarely matters, pick any day in the right month.',
 			type: 'date',
 			validation: (Rule) => Rule.required(),
 		}),
@@ -48,7 +48,7 @@ export default defineType({
 		defineField({
 			name: 'type',
 			title: 'Type',
-			description: 'Multi-select — a project can be more than one, e.g. both Housing and Public Space.',
+			description: 'Multi-select: a project can be more than one, e.g. both Housing and Public Space.',
 			type: 'array',
 			of: [{ type: 'string' }],
 			options: { list: PROJECT_TYPES },

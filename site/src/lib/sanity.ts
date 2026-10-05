@@ -17,7 +17,7 @@ export const sanityConfigured = Boolean(projectId);
 // error at all, rather than failing the build. Fail loudly instead.
 if (import.meta.env.PROD && !sanityConfigured) {
 	throw new Error(
-		'SANITY_PROJECT_ID is not set for a production build. Building without it would silently ship an empty site (no projects, drawings, or writing) — set SANITY_PROJECT_ID (and optionally SANITY_DATASET) in site/.env before running `npm run build`.',
+		'SANITY_PROJECT_ID is not set for a production build. Building without it would silently ship an empty site (no projects, drawings, or writing): set SANITY_PROJECT_ID (and optionally SANITY_DATASET) in site/.env before running `npm run build`.',
 	);
 }
 
@@ -114,7 +114,7 @@ export async function getProject(slug: string): Promise<Project | null> {
  * counterpart: only documents with `private == true`. The pages built from
  * these (`/private/[slug]`) are additionally kept out of search results via
  * Base's `noindex` prop and the sitemap's filter, on top of the password
- * gate itself (`worker/index.ts`) — the query-level split here only keeps
+ * gate itself (`worker/index.ts`): the query-level split here only keeps
  * this content out of the public `/portfolio` pages and RSS/sitemap builds,
  * it isn't what actually protects it. */
 export async function getPrivateProjects(): Promise<Project[]> {

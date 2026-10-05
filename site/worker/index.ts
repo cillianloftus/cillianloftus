@@ -1,8 +1,8 @@
-// The main site is otherwise pure static assets (no Worker code at all) —
+// The main site is otherwise pure static assets (no Worker code at all),
 // this is the one exception, scoped via wrangler.jsonc's
 // `assets.run_worker_first: ["/private/*"]` so every other request still
 // goes straight to the static assets binding untouched. A shared password,
-// not per-person auth (Cloudflare Access) — see CLAUDE.md's "Protected
+// not per-person auth (Cloudflare Access), see CLAUDE.md's "Protected
 // pages" section for why. Client-side password checks were ruled out from
 // the start (trivially bypassed by reading the page source), so this has
 // to run server-side, and the only server this site has is this Worker.
@@ -70,12 +70,12 @@ interface SiteChrome {
 }
 
 // Pulls the actual rendered header/footer/CSS straight from the built site
-// (site/src/pages/chrome.astro — Base.astro with nothing in the slot)
+// (site/src/pages/chrome.astro, Base.astro with nothing in the slot)
 // instead of maintaining a second hand-written copy of them here. A hand
 // copy is exactly what this replaced: it drifted (stale color tokens
 // out of sync with global.css, a header missing the nav entirely for a
 // while) because nothing forced the two to stay in sync. Fetched fresh on
-// every request via the ASSETS binding — cheap (an internal binding call,
+// every request via the ASSETS binding, cheap (an internal binding call,
 // not a real network hop) and guarantees this always matches whatever the
 // rest of the site actually looks like, including after a redesign, with
 // no line here needing to change.
@@ -109,7 +109,7 @@ async function fetchSiteChrome(env: Env, origin: string): Promise<SiteChrome | n
 
 function loginPage(chrome: SiteChrome | null, { redirect, error }: { redirect: string; error: boolean }): string {
 	// Falls back to a bare, unstyled (but fully functional) form if the
-	// chrome fetch ever fails — the password gate itself must never break
+	// chrome fetch ever fails: the password gate itself must never break
 	// just because its cosmetic wrapper couldn't be fetched.
 	const head = chrome
 		? `${chrome.headScript}${chrome.styleLinks}`
@@ -127,7 +127,7 @@ function loginPage(chrome: SiteChrome | null, { redirect, error }: { redirect: s
 ${head}
 <style>
 	.private-gate {
-		/* No max-width here (unlike the form below) — the heading needs
+		/* No max-width here (unlike the form below): the heading needs
 		   room to stay on one line at ordinary viewport widths, and a
 		   width constraint tight enough for the form ("Enter the password
 		   to continue.") was too tight for "This page is private." next to
@@ -155,7 +155,7 @@ ${head}
 		background: var(--color-surface);
 		color: var(--color-text);
 	}
-	/* :focus rather than :focus-visible — this field is autofocused on
+	/* :focus rather than :focus-visible: this field is autofocused on
 	   load, and whether an autofocused (not keyboard- or click-triggered)
 	   element counts as "focus-visible" is inconsistent across browsers, so
 	   :focus-visible alone left the ring not showing at all in some of them. */
@@ -164,7 +164,7 @@ ${head}
 		outline-offset: 1px;
 	}
 	/* Neutralizes the browser's own autofill background (usually a jarring
-	   yellow/blue) via a same-color inset box-shadow trick — background
+	   yellow/blue) via a same-color inset box-shadow trick, background
 	   itself can't be overridden directly on an autofilled field. */
 	.private-gate input[type="password"]:-webkit-autofill {
 		-webkit-text-fill-color: var(--color-text);
@@ -204,7 +204,7 @@ ${bodyEnd}
 <script>
 	// Mobile browsers (iOS Safari in particular) deliberately refuse to open
 	// the on-screen keyboard for a field focused via \`autofocus\` or a
-	// script-triggered .focus() with no real tap behind it — a genuine user
+	// script-triggered .focus() with no real tap behind it, a genuine user
 	// gesture is required, by design, so the keyboard can't pop open on its
 	// own before someone's actually touched the screen. This can't be fully
 	// worked around, but the first tap ANYWHERE on the page (not just

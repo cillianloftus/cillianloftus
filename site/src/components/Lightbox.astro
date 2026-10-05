@@ -39,7 +39,7 @@ import Icon from './icons/Icon.astro';
 	// The slide runs through the Web Animations API, not a CSS
 	// transition/animation, so the site's global `prefers-reduced-motion`
 	// rule (global.css, which only zeroes `animation-duration` and
-	// `transition-duration`) never touches it — checked here instead, and
+	// `transition-duration`) never touches it: checked here instead, and
 	// live via the query's own change event rather than read once, so
 	// toggling the OS setting while the lightbox is open takes effect
 	// immediately. Live touch-drag tracking is untouched either way: it's
@@ -58,7 +58,7 @@ import Icon from './icons/Icon.astro';
 		// Move to a direct child of <body>. Nested where Astro places it by
 		// default, ancestor CSS (the sticky header's backdrop-filter, in
 		// particular) can bleed through this overlay in a Chromium compositing
-		// quirk despite correct z-index and hit-testing — moving it out from
+		// quirk despite correct z-index and hit-testing, moving it out from
 		// under any such ancestor sidesteps the whole class of bug.
 		if (lightbox.parentElement !== document.body) {
 			document.body.appendChild(lightbox);
@@ -86,12 +86,12 @@ import Icon from './icons/Icon.astro';
 
 		// Two frames, not one. The whole point of this rewrite is that a
 		// navigation is a single motion where the outgoing and incoming
-		// drawings move together — the old one sliding out and the new one
+		// drawings move together: the old one sliding out and the new one
 		// sliding in have to be visible and animating at the same time, which
 		// is impossible with a single frame that's re-sourced mid-transition.
 		// "active" is whichever frame is showing the current drawing at rest;
-		// the other one is idle (hidden) except while a navigation — a
-		// button/key press, or a live touch drag — is in progress, when it
+		// the other one is idle (hidden) except while a navigation, a
+		// button/key press, or a live touch drag, is in progress, when it
 		// carries the adjacent drawing in from the opposite edge.
 		type FrameRef = { el: HTMLElement; img: HTMLImageElement; loadToken: number };
 		const frames: FrameRef[] = frameEls.map((el) => ({
@@ -106,7 +106,7 @@ import Icon from './icons/Icon.astro';
 		let isAnimating = false;
 		let drag: { startX: number; startY: number; dx: number; dy: number; axis: 'x' | 'y' | null } | null = null;
 		// Locked in as soon as a horizontal drag's direction is known (not
-		// necessarily equal to the final swipe direction — it can flip if the
+		// necessarily equal to the final swipe direction, it can flip if the
 		// user reverses mid-drag), so the drag handlers and the release/commit
 		// logic agree on which neighbor is currently loaded into the idle frame.
 		let dragDirection: 1 | -1 | null = null;
@@ -117,7 +117,7 @@ import Icon from './icons/Icon.astro';
 		}
 
 		// Desktop (mouse) zoom. Native pinch-zoom only exists for touch, so a
-		// mouse user has no way to zoom at all without this — click toggles a
+		// mouse user has no way to zoom at all without this: click toggles a
 		// fixed zoom level, drag pans while zoomed.
 		let desktopZoomed = false;
 		let panX = 0;
@@ -172,7 +172,7 @@ import Icon from './icons/Icon.astro';
 		// after a style write (the idle frame's visibility flipping on), so
 		// reading layout-dependent properties there would force a
 		// synchronous reflow at exactly the moment a slide needs to start
-		// smoothly — this way that read only happens on open and on resize,
+		// smoothly, this way that read only happens on open and on resize,
 		// when a one-time layout cost doesn't read as a stutter.
 		let stageAvailW = 0;
 		let stageAvailH = 0;
@@ -184,7 +184,7 @@ import Icon from './icons/Icon.astro';
 		}
 
 		// A frame's pixel size is computed directly here, from the trigger's
-		// known aspect ratio and the stage's cached available space — rather
+		// known aspect ratio and the stage's cached available space, rather
 		// than relying on CSS aspect-ratio, which doesn't resolve predictably
 		// once a real image with its own intrinsic size loads into it. This
 		// runs before any pixel of either the thumbnail or full-res image has
@@ -217,7 +217,7 @@ import Icon from './icons/Icon.astro';
 			});
 		}
 
-		// Loads a trigger's content into a given frame — sizing plus image
+		// Loads a trigger's content into a given frame, sizing plus image
 		// src, nothing about caption/count, since those only ever describe
 		// whichever trigger is currentIndex, not whatever's momentarily
 		// loaded into the idle frame mid-drag.
@@ -230,7 +230,7 @@ import Icon from './icons/Icon.astro';
 
 			// A drag reversal calls this again on the same idle frame before an
 			// earlier preload for it has necessarily resolved (nothing cancels
-			// the first request) — without this token, a slow first preload's
+			// the first request), without this token, a slow first preload's
 			// onload can fire after a second, correct one has already landed
 			// and stomp frame.img.src back to the wrong (stale) neighbor's
 			// image. Bumping the token per call and checking it in onload
@@ -345,7 +345,7 @@ import Icon from './icons/Icon.astro';
 
 		// The outgoing and incoming drawings slide as one motion: both frames
 		// animate at once, the active one leaving in `direction` while the
-		// idle one arrives from the opposite edge — not two animations run
+		// idle one arrives from the opposite edge, not two animations run
 		// back to back. `startDx` lets this continue smoothly from wherever a
 		// live drag left off rather than always starting at rest; when the
 		// drag already loaded and positioned the idle frame (`alreadyPrepared`),
@@ -437,7 +437,7 @@ import Icon from './icons/Icon.astro';
 		closeTargets.forEach((el) =>
 			el.addEventListener('click', (e) => {
 				// Closes for a click on the empty stage area or the close button
-				// itself (including its icon) — not one that bubbled up from the
+				// itself (including its icon), not one that bubbled up from the
 				// image, which sits inside the stage but shouldn't dismiss it.
 				const target = e.target as HTMLElement;
 				if (!target.closest('.lightbox-image')) close();
@@ -448,8 +448,8 @@ import Icon from './icons/Icon.astro';
 
 		// Desktop zoom: click toggles a fixed zoom level, drag pans while
 		// zoomed. Both frames' images are wired up the same way (each
-		// element identity persists across navigations — only its src
-		// changes — so this only needs to run once each), guarded so only
+		// element identity persists across navigations, only its src
+		// changes, so this only needs to run once each), guarded so only
 		// the currently-active one actually responds.
 		function attachZoomHandlers(frame: FrameRef) {
 			frame.img.addEventListener('mousedown', (e) => {
@@ -530,7 +530,7 @@ import Icon from './icons/Icon.astro';
 					const dir: 1 | -1 | null = drag.dx < 0 ? 1 : drag.dx > 0 ? -1 : dragDirection;
 					if (dir && dir !== dragDirection) {
 						// Only walk the page's [data-lightbox] elements when the
-						// direction actually changes, not on every touchmove —
+						// direction actually changes, not on every touchmove,
 						// this list can be large (every drawing on /drawings),
 						// and re-querying it on every pixel of finger movement
 						// was a real source of stutter during a drag.
@@ -566,14 +566,14 @@ import Icon from './icons/Icon.astro';
 						dragDirection = null;
 					});
 				} else if (direction) {
-					// Didn't clear the threshold — both frames spring back to
+					// Didn't clear the threshold, both frames spring back to
 					// rest rather than committing to a navigation.
 					springBack(direction, dx).then(() => {
 						dragDirection = null;
 					});
 				} else {
 					// Never resolved a direction (negligible horizontal
-					// movement) — just the active frame to settle.
+					// movement), just the active frame to settle.
 					isAnimating = true;
 					animateFrameX(frames[activeIndex].el, dx, 0).then(() => {
 						isAnimating = false;
@@ -691,17 +691,17 @@ import Icon from './icons/Icon.astro';
 	}
 
 	/* A plain div has no intrinsic size, so its explicit pixel size (set in
-	   JS from the drawing's known aspect ratio) fully determines this box —
+	   JS from the drawing's known aspect ratio) fully determines this box,
 	   unlike the img inside it, its size never changes as a lower- or
 	   higher-res image loads into that img. Positioned (not flex-centered),
-	   because two of these exist at once during a navigation — the active
-	   drawing and the one sliding in beside it — each sized to its own
+	   because two of these exist at once during a navigation, the active
+	   drawing and the one sliding in beside it, each sized to its own
 	   drawing's aspect ratio; `translate(-50%, -50%)` centers each in the
 	   stage regardless of its own size, and the same transform's `translateX`
 	   term is what the slide (and live touch-drag) moves. The slide itself
 	   runs entirely through the Web Animations API (see animateFrameX in the
 	   script), not a CSS transition, so there's no transition-class/timing
-	   property here — live touch-drag sets the transform directly with no
+	   property here: live touch-drag sets the transform directly with no
 	   animation at all, tracking the finger 1:1. */
 	.lightbox-frame {
 		position: absolute;
@@ -711,7 +711,7 @@ import Icon from './icons/Icon.astro';
 		max-height: 100%;
 		/* Only ever two of these, both live for as long as the lightbox is
 		   open, so promoting them to their own compositor layer up front is
-		   cheap — it avoids the browser doing that promotion right as a
+		   cheap, it avoids the browser doing that promotion right as a
 		   slide starts, which is a common cause of a dropped first frame. */
 		will-change: transform;
 	}
@@ -747,17 +747,17 @@ import Icon from './icons/Icon.astro';
 	.lightbox-caption {
 		font-size: var(--step--1);
 		/* Reserves 2 lines' worth of height regardless of the current
-		   drawing's actual caption length — without this, a caption that
+		   drawing's actual caption length, without this, a caption that
 		   wraps to a second line grows .lightbox-footer (flex-shrink: 0),
 		   which shrinks .lightbox-stage (flex: 1) by the same amount, which
 		   shifts the image (centered within the stage's own box, not the
 		   viewport) up to compensate. Reserving max-realistic height here
 		   keeps the footer's rendered height constant across navigation, so
-		   the stage — and the image centered in it — never moves on account
+		   the stage, and the image centered in it, never moves on account
 		   of caption length. The `* 1.5` mirrors global.css's body line-height
 		   (not redeclared locally here, so this has to track it by hand). A
 		   caption longer than 2 lines still grows past this and still shifts
-		   things, but real captions on this site are short phrases — two
+		   things, but real captions on this site are short phrases, two
 		   lines already covers the case that was actually jarring on mobile. */
 		min-height: calc(var(--step--1) * 1.5 * 2);
 	}

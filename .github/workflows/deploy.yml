@@ -2,7 +2,7 @@ name: Deploy site
 
 # Two ways to trigger a deploy:
 # - repository_dispatch, fired by a Sanity webhook whenever content is
-#   published (see the Studio webhook config for the exact filter used —
+#   published (see the Studio webhook config for the exact filter used,
 #   it only fires on real publishes, not on every draft autosave).
 # - workflow_dispatch, so a deploy can also be run manually from the
 #   Actions tab in GitHub without needing to publish something first.
@@ -23,7 +23,7 @@ jobs:
     env:
       # Not a secret: Sanity's project ID is already public (it's baked
       # into the deployed site's own client-side JS for image URLs, and
-      # the dataset itself is queryable with zero auth — verified directly
+      # the dataset itself is queryable with zero auth, verified directly
       # against the live API). Hardcoding it here avoids managing a GitHub
       # secret for something that was never actually secret.
       SANITY_PROJECT_ID: ygdste2q

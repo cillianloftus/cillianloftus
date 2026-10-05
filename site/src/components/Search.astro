@@ -40,15 +40,15 @@ import Icon from './icons/Icon.astro';
 		const errorMsg = document.querySelector<HTMLParagraphElement>('.search-error');
 		if (!toggle || !closeButton || !dialog || !form || !input || !resultsList || !emptyMsg || !errorMsg) return;
 
-		// Pagefind's own module — it only exists in dist/pagefind/ after the
+		// Pagefind's own module, it only exists in dist/pagefind/ after the
 		// postbuild step (`pagefind --site dist`) runs, so it's not
 		// resolvable at all in `astro dev` (no build has happened yet), and
 		// there's no real package to hang an ambient module declaration off
 		// (astro check's script-block resolution doesn't honor one written
 		// for the literal path anyway). The `: string` annotation below
 		// widens the URL past its literal type, which is what makes
-		// TypeScript treat the import() as untyped instead of trying — and
-		// failing — to resolve it as a real module specifier; the actual
+		// TypeScript treat the import() as untyped instead of trying, and
+		// failing, to resolve it as a real module specifier; the actual
 		// shape used is asserted explicitly on the awaited result instead.
 		interface PagefindResultData {
 			url: string;
@@ -64,17 +64,17 @@ import Icon from './icons/Icon.astro';
 			): Promise<{ results: { id: string; data: () => Promise<PagefindResultData> }[] } | null>;
 		}
 		// A plain `import(/* @vite-ignore */ '/pagefind/pagefind.js')` still
-		// isn't enough on its own — Vite's build wraps *any* import() it can
+		// isn't enough on its own: Vite's build wraps *any* import() it can
 		// see in the source, `@vite-ignore` or not, in its own modulepreload
 		// helper, which leaves a literal, never-substituted __VITE_PRELOAD__
 		// token in the output (a known Vite issue, since the target genuinely
 		// doesn't exist at Vite's own build time for it to resolve a preload
-		// list against — vitejs/vite#18551) — that throws at runtime the
+		// list against, vitejs/vite#18551) that throws at runtime the
 		// instant this ever actually runs. Building the import() inside a
 		// `Function` body instead hides it from Vite's static analysis
 		// completely, since from the bundler's perspective there's no
 		// import() call anywhere in this file's source at all, just a string
-		// handed to `Function` — the standard workaround for this across
+		// handed to `Function`, the standard workaround for this across
 		// every Vite-based static site generator, not specific to Astro.
 		const dynamicImport = new Function('specifier', 'return import(specifier)') as (specifier: string) => Promise<Pagefind>;
 		let pagefind: Pagefind | null = null;
@@ -83,11 +83,11 @@ import Icon from './icons/Icon.astro';
 
 		// Failures here are almost always either a real network problem or a
 		// deploy having only just gone out (this asset can take a moment to
-		// propagate) — neither of which fixes itself mid-keystroke, but both
+		// propagate), neither of which fixes itself mid-keystroke, but both
 		// might have cleared up by the next time the dialog is opened, so the
 		// retry happens there (see the toggle's click handler) rather than on
 		// every character typed. The retry needs a cache-busting query param,
-		// not just a fresh call — confirmed by testing, not assumed: once a
+		// not just a fresh call, confirmed by testing, not assumed: once a
 		// dynamic import() to a given URL has failed, the browser's own
 		// module loader remembers that URL as rejected and won't re-fetch it
 		// no matter how many more times it's imported, independent of
@@ -124,7 +124,7 @@ import Icon from './icons/Icon.astro';
 				const excerpt = document.createElement('p');
 				excerpt.className = 'search-result-excerpt';
 				// Pagefind generates this from the site's own indexed content
-				// (with <mark> around the match) — not user input, safe to set.
+				// (with <mark> around the match), not user input, safe to set.
 				excerpt.innerHTML = result.excerpt;
 				a.append(title, excerpt);
 				li.append(a);
@@ -161,7 +161,7 @@ import Icon from './icons/Icon.astro';
 		toggle.addEventListener('click', () => {
 			dialog.showModal();
 			input.focus();
-			// A previous failed load shouldn't stay failed forever — give it
+			// A previous failed load shouldn't stay failed forever, give it
 			// one fresh attempt each time the dialog is (re)opened.
 			const retry = loadFailed;
 			if (retry) {
@@ -178,7 +178,7 @@ import Icon from './icons/Icon.astro';
 		input.addEventListener('input', () => runSearch(resultsList, emptyMsg, errorMsg, input.value.trim()));
 
 		// A click that lands on the dialog element itself (not anything
-		// inside it) is a click on the ::backdrop — dialog has no padding
+		// inside it) is a click on the ::backdrop, dialog has no padding
 		// of its own outside its content, so this can't misfire from
 		// clicking near the edge of the actual panel.
 		dialog.addEventListener('click', (event) => {
@@ -305,7 +305,7 @@ import Icon from './icons/Icon.astro';
 
 <style is:global>
 	/* Everything below styles result <li>/<a>/<p>/<mark> elements the script
-	   builds with document.createElement/innerHTML at runtime — Astro's
+	   builds with document.createElement/innerHTML at runtime: Astro's
 	   scoped-style attribute only ever gets stamped onto elements that exist
 	   in this component's own template at build time, so a normal scoped
 	   rule here would compile correctly but silently never match anything

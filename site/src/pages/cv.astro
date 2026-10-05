@@ -11,8 +11,8 @@ const siteSettings = sanityConfigured ? await getSiteSettings() : null;
 
 const location = siteSettings?.location || fallbackLocation;
 const email = siteSettings?.email || fallbackEmail;
-// Sanity's file CDN serves with `Content-Disposition: inline` by default —
-// confirmed live (curl -I on the deployed cvFile URL) — so the `download`
+// Sanity's file CDN serves with `Content-Disposition: inline` by default,
+// confirmed live (curl -I on the deployed cvFile URL), so the `download`
 // attribute below, being cross-origin, is silently ignored by the browser
 // and "Download PDF" just opens the PDF instead. `?dl` makes Sanity itself
 // send `Content-Disposition: attachment` (with the file's own original

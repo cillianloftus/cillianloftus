@@ -131,7 +131,7 @@ function sizesAttrFor(size: string | undefined) {
 	function initDrawingsFilter() {
 		// This re-runs on every astro:after-swap (client-side nav via View
 		// Transitions), but window-level listeners added below aren't scoped
-		// to the DOM it swaps out — without removing the previous run's pair
+		// to the DOM it swaps out, without removing the previous run's pair
 		// first, repeat visits to this page permanently accumulate resize/
 		// popstate listeners, each closing over that visit's now-detached
 		// `list`/`items`/`state`.

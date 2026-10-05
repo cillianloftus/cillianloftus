@@ -8,7 +8,7 @@ interface Props {
 	crop?: boolean;
 	maxHeight?: string;
 	lightbox?: boolean;
-	/** For the one above-the-fold image on a page (a project hero) — skips
+	/** For the one above-the-fold image on a page (a project hero), skips
 	 * lazy-loading and asks the browser to fetch it first, since lazy-loading
 	 * an LCP element only delays it for no benefit (it's already on screen
 	 * at first paint, there's nothing to wait for scroll-into-view for). */
@@ -20,7 +20,7 @@ const { drawing, sizes, crop = false, maxHeight, lightbox = false, priority = fa
 const widths = [480, 800, 1200, 1600, 2000];
 // Cropped mode (the portfolio index's uniform 4:3 card) asks Sanity's CDN
 // for a pre-cropped image at that exact ratio rather than requesting the
-// full image and letting CSS object-fit:cover clip it client-side — the
+// full image and letting CSS object-fit:cover clip it client-side, the
 // CDN crop automatically centers on each image's own hotspot (set per
 // image in the Studio, `options: { hotspot: true }` on the schema), so the
 // crop respects what's actually important in the drawing instead of
@@ -36,14 +36,14 @@ const src = (crop ? urlFor(drawing.image).width(1200).height(900).fit('crop') : 
 	.url();
 // Wider than the grid srcset's max on purpose: this is what the lightbox
 // opens at full-viewport size, and its 2.2x desktop zoom (Lightbox.astro's
-// DESKTOP_ZOOM_SCALE) stacks with the display's own device pixel ratio —
+// DESKTOP_ZOOM_SCALE) stacks with the display's own device pixel ratio:
 // a 2000px source was visibly softer than the ~5000px source PNGs
 // (scripts/pdf_to_png.py) actually support once either of those kicked in.
 const fullSrc = urlFor(drawing.image).width(3600).auto('format').url();
 const alt = drawing.alt || drawing.caption;
 
 // A height-capped image (the project hero) has to give up the component's
-// usual `width: 100%` — otherwise the box keeps the container's full width
+// usual `width: 100%`, otherwise the box keeps the container's full width
 // even once its height is clamped, so it stops matching the image's own
 // aspect ratio and the leftover space shows through as flat background
 // color on either side. Letting width track the aspect ratio instead means
