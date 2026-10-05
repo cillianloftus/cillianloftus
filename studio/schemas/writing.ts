@@ -59,7 +59,7 @@ export default defineType({
 			of: [
 				{
 					type: 'object',
-					name: 'reference',
+					name: 'referenceImage',
 					fields: [
 						defineField({
 							name: 'image',

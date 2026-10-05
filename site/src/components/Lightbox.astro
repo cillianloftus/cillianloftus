@@ -29,6 +29,12 @@ import Icon from './icons/Icon.astro';
 </div>
 
 <script>
+	declare global {
+		interface Window {
+			__lightboxCleanup?: () => void;
+		}
+	}
+
 	const SWIPE_THRESHOLD = 60;
 	const DISMISS_THRESHOLD = 80;
 	const DESKTOP_ZOOM_SCALE = 2.2;
@@ -52,6 +58,21 @@ import Icon from './icons/Icon.astro';
 	});
 
 	function initLightbox() {
+		// Runs again on every astro:page-load (fires on initial load and
+		// after every View Transition), but the four listeners below live on
+		// window/document, which persist across a transition's DOM swap
+		// instead of being discarded with the old page content, without
+		// this, repeat navigation between any two pages that render
+		// <Lightbox /> permanently accumulates one full set per visit, each
+		// closing over that visit's now-detached lightbox/frames (same fix
+		// as drawings.astro's initDrawingsFilter and ProjectDetail.astro's
+		// initDrawingMasonry, confirmed leaking here via a scripted
+		// Playwright session before this guard was added).
+		if (window.__lightboxCleanup) {
+			window.__lightboxCleanup();
+			window.__lightboxCleanup = undefined;
+		}
+
 		const lightbox = document.getElementById('lightbox');
 		if (!lightbox) return;
 
@@ -426,13 +447,14 @@ import Icon from './icons/Icon.astro';
 			}
 		}
 
-		document.addEventListener('click', (e) => {
+		function onTriggerClick(e: MouseEvent) {
 			const trigger = (e.target as HTMLElement).closest<HTMLElement>('[data-lightbox]');
 			if (!trigger) return;
 			const triggers = getVisibleTriggers();
 			const index = triggers.indexOf(trigger);
 			if (index !== -1) open(index, trigger);
-		});
+		}
+		document.addEventListener('click', onTriggerClick);
 
 		closeTargets.forEach((el) =>
 			el.addEventListener('click', (e) => {
@@ -473,7 +495,7 @@ import Icon from './icons/Icon.astro';
 		}
 		frames.forEach(attachZoomHandlers);
 
-		window.addEventListener('mousemove', (e) => {
+		function onWindowMouseMove(e: MouseEvent) {
 			if (!isMouseDown) return;
 			mouseMoveDistance = Math.max(
 				mouseMoveDistance,
@@ -484,12 +506,26 @@ import Icon from './icons/Icon.astro';
 			panY = panOriginStart.y + (e.clientY - panPointerStart.y);
 			clampPan();
 			applyDesktopZoomTransform();
-		});
+		}
+		window.addEventListener('mousemove', onWindowMouseMove);
 
-		window.addEventListener('mouseup', () => {
+		function onWindowMouseUp() {
 			isMouseDown = false;
 			isPanningMouse = false;
-		});
+		}
+		window.addEventListener('mouseup', onWindowMouseUp);
+
+		// Four listeners above live on window/document rather than on any
+		// element inside #lightbox, so they survive a View Transition's DOM
+		// swap instead of being discarded with the old page content; this is
+		// what the guard at the top of initLightbox() calls on the next run
+		// to remove exactly this generation's set before attaching a new one.
+		window.__lightboxCleanup = () => {
+			window.removeEventListener('resize', resizeFrame);
+			window.removeEventListener('mousemove', onWindowMouseMove);
+			window.removeEventListener('mouseup', onWindowMouseUp);
+			document.removeEventListener('click', onTriggerClick);
+		};
 
 		// Single-finger swipe navigates/dismisses; two fingers (or an active
 		// pinch-zoom) are left alone so the browser's native zoom takes over.

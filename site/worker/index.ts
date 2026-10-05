@@ -224,8 +224,13 @@ ${bodyEnd}
 </html>`;
 }
 
+// Guards against the hidden `redirect` field being used as an open
+// redirect (it must stay within /private); falls back to home rather than
+// bare `/private`, which isn't a real page (there's no /private index,
+// only individual /private/[slug] pages reached via their own direct
+// link) and would otherwise 404 even once the password is accepted.
 function safeRedirectPath(value: string | null): string {
-	return value && value.startsWith('/private') ? value : '/private';
+	return value && value.startsWith('/private') ? value : '/';
 }
 
 export default {
