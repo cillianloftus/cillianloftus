@@ -5,7 +5,7 @@ const stack = [
 	{
 		name: 'Astro',
 		description:
-			"Renders everything to plain HTML at build time.",
+			"Renders everything to plain HTML at build time. No JavaScript ships unless a page actually needs it: the filter, the masonry grid, the lightbox are all plain script, not a framework.",
 	},
 	{
 		name: 'TypeScript',
@@ -18,7 +18,7 @@ const stack = [
 	},
 	{
 		name: 'CSS',
-		description: "Hand-written CSS, no framework. Shared set of colour and spacing variables to ensure consistency.",
+		description: "Hand-written, no framework. Shared set of colour and spacing variables, kept consistent across every page.",
 	},
 	{
 		name: 'Cloudflare',
@@ -26,8 +26,16 @@ const stack = [
 			"Static hosting for almost everything. One exception: the password-gated project pages run through a small Worker script that checks the password and signs you a session cookie.",
 	},
 	{
+		name: 'GitHub Actions',
+		description: 'Rebuilds and redeploys the site automatically whenever something is published. Can also be triggered by hand.'
+	},
+	{
+		name: 'Pagefind',
+		description: 'Builds the search index from the finished pages at build time. No server, just a static index the browser searches directly.'
+	},
+	{
 		name: 'IBM Plex Sans',
-		description: "The one typeface on the site, self-hosted so nothing calls out to Google Fonts.",
+		description: "The only typeface on the site, self-hosted.",
 	},
 ];
 
